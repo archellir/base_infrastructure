@@ -1,0 +1,7 @@
+{
+  email arcbjorn@proton.me
+}
+
+infra.arcbjorn.com {
+  reverse_proxy portainer:9000
+}
