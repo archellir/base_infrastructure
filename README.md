@@ -1,2 +1,2 @@
-# base_infrustructure
-Infrustructure for base server
+# base_infrastructure
+Infrastructure for base server
