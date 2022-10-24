@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  server:
+    image: gitea/gitea:latest
+    container_name: gitea
+    name: gitea
+
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=postgres
+      - GITEA__database__HOST="postgresql:${POSTGRES_PORT}"
+      - GITEA__database__NAME="${GIT_DB}"
+      - GITEA__database__USER="${GIT_DB_USER}"
+      - GITEA__database__PASSWD="${GIT_DB}"
+    restart: always
+    volumes:
+      - /root/containers/gitea/data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - postgresql-network
+    ports:
+      - "${GIT_PORT}:3000"
+      - "222:22"
+
+volumes:
+  gitea:
+    name: gitea
+
+networks:
+  postgresql-network:
+    external: true
+    name: postgresql-network
