@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   postgresql:
-    image: postgresql:latest
+    image: postgres
     container_name: postgresql
 
     restart: always
