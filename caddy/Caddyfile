@@ -9,3 +9,7 @@ infra.arcbjorn.com {
 db.arcbjorn.com {
   reverse_proxy pgadmin:7000
 }
+
+git.arcbjorn.com {
+  reverse_proxy gitea:8070
+}
