@@ -8,6 +8,12 @@ Infrastructure for base server
 chmod +x scripts/create-multiple-postgresql-databases.sh
 ```
 
+#### For [pgAdmin](https://www.pgadmin.org/docs/pgadmin4/latest/container_deployment.html#mapped-files-and-directories):
+
+```sh
+sudo chown -R 5050:5050 <host_directory>
+```
+
 #### Database backup & restore:
 
 Backup:
@@ -22,7 +28,7 @@ Restore:
 cat <dump_name>.sql | docker exec -i <postgres-container-id> psql -U <user>
 ```
 
-Example of connection:
+#### Example of connection:
 
 ```sh
 # host = container_name
