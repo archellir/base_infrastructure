@@ -11,7 +11,7 @@ services:
       - "${POSTGRES_PORT}:5432"
     networks:
       - postgresql-network
-    environment:
+    env_file:
       - stack.env
     volumes:
       - /root/containers/postgresql/docker-postgresql-multiple-databases:/docker-entrypoint-initdb.d
@@ -26,7 +26,7 @@ services:
     networks:
       - postgresql-network
 
-    environment:
+    env_file:
       - stack.env
 
     ports:
