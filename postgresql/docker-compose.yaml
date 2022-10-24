@@ -1,0 +1,44 @@
+version: 3.8
+
+services:
+  postgresql:
+    image: postgresql:latest
+    container_name: postgresql
+    name: postgresql
+
+    restart: always
+
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    networks:
+      - postgresql-network
+    environment:
+      - stack.env
+    volumes:
+      - /root/containers/postgresql/docker-postgresql-multiple-databases:/docker-entrypoint-initdb.d
+      - /root/containers/postgresql/data:/var/lib/postgresql/
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    name: pgadmin
+
+    restart: always
+
+    environment:
+      - stack.env
+
+    ports:
+      - "${PGADMIN_PORT}:80"
+    volumes:
+      - /root/containers/pgadmin/data:/var/lib/pgadmin
+    depends_on:
+      - postgresql
+
+volumes:
+  postgresql:
+    name: postgresql
+
+networks:
+  postgresql-network:
+    name: postgresql-network
