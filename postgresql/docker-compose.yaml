@@ -4,7 +4,6 @@ services:
   postgresql:
     image: postgresql:latest
     container_name: postgresql
-    name: postgresql
 
     restart: always
 
