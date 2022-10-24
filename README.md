@@ -5,7 +5,7 @@ Infrastructure for base server
 #### For postgreSQL multiple databases scripts:
 
 ```sh
-chmod +x scripts/create-multiple-postgres-databases.sh
+chmod +x scripts/create-multiple-postgresql-databases.sh
 ```
 
 #### Database backup & restore:
