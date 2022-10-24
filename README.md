@@ -21,3 +21,10 @@ Restore:
 ```sh
 cat <dump_name>.sql | docker exec -i <postgres-container-id> psql -U <user>
 ```
+
+Example of connection:
+
+```sh
+# host = container_name
+postgres://username:password@container_name:port/db_name
+```
