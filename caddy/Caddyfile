@@ -4,4 +4,9 @@
 
 infra.arcbjorn.com {
   reverse_proxy portainer:9000
+  reverse_proxy pgadmin:7000
+}
+
+db.arcbjorn.com {
+  reverse_proxy pgadmin:7000
 }
