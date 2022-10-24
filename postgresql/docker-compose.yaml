@@ -23,6 +23,9 @@ services:
 
     restart: always
 
+    networks:
+      - postgresql-network
+
     environment:
       - stack.env
 
