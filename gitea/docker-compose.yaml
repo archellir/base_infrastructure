@@ -4,7 +4,6 @@ services:
   server:
     image: gitea/gitea:latest
     container_name: gitea
-    name: gitea
 
     environment:
       - USER_UID=1000
