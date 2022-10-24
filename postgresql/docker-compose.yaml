@@ -12,7 +12,7 @@ services:
     networks:
       - postgresql-network
     env_file:
-      - stack.env
+      - ../stack.env
     volumes:
       - /root/containers/postgresql/docker-postgresql-multiple-databases:/docker-entrypoint-initdb.d
       - /root/containers/postgresql/data:/var/lib/postgresql/
@@ -27,7 +27,7 @@ services:
       - postgresql-network
 
     env_file:
-      - stack.env
+      - ../stack.env
 
     ports:
       - "${PGADMIN_PORT}:80"
