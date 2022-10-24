@@ -21,7 +21,6 @@ services:
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin
-    name: pgadmin
 
     restart: always
 
