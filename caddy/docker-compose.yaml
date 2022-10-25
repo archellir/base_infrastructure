@@ -12,7 +12,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /root/containers/portainer/portainer-data:/data
     networks:
-      - caddy
+      - caddy-network
     ports:
       - 9000:9000
 
@@ -29,7 +29,7 @@ services:
       - /root/containers/caddy/caddy_data:/data
       - /root/containers/caddy/caddy_config:/config
     networks:
-      - caddy
+      - caddy-network
 
 volumes:
   caddy_data:
@@ -37,6 +37,6 @@ volumes:
   caddy_config:
 
 networks:
-  caddy:
+  caddy-network:
     external: true
-    name: caddy
+    name: caddy-network

@@ -20,7 +20,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
     networks:
       - postgresql-network
-      - caddy
+      - caddy-network
     ports:
       - "${GIT_PORT}:3000"
       - "222:22"

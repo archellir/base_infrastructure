@@ -25,7 +25,7 @@ services:
 
     networks:
       - postgresql-network
-      - caddy
+      - caddy-network
 
     env_file:
       - ../stack.env
