@@ -45,3 +45,6 @@ networks:
   postgresql-network:
     external: true
     name: postgresql-network
+  caddy-network:
+    external: true
+    name: caddy-network

@@ -28,3 +28,11 @@ services:
 volumes:
   gitea:
     name: gitea
+
+networks:
+  postgresql-network:
+    external: true
+    name: postgresql-network
+  caddy-network:
+    external: true
+    name: caddy-network
