@@ -31,11 +31,6 @@ services:
     networks:
       - caddy-network
 
-volumes:
-  caddy_data:
-    external: true
-  caddy_config:
-
 networks:
   caddy-network:
     external: true
