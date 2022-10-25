@@ -1,6 +1,5 @@
-version: "3.3"
-networks:
-  caddy:
+version: "3.9"
+
 services:
   portainer:
     image: portainer/portainer-ce:latest
@@ -31,7 +30,13 @@ services:
       - /root/containers/caddy/caddy_config:/config
     networks:
       - caddy
+
 volumes:
   caddy_data:
     external: true
   caddy_config:
+
+networks:
+  caddy:
+    external: true
+    name: caddy

@@ -20,6 +20,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
     networks:
       - postgresql-network
+      - caddy
     ports:
       - "${GIT_PORT}:3000"
       - "222:22"
@@ -27,8 +28,3 @@ services:
 volumes:
   gitea:
     name: gitea
-
-networks:
-  postgresql-network:
-    external: true
-    name: postgresql-network

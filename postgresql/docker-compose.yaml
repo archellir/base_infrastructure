@@ -1,4 +1,4 @@
-version: "3.8"
+version: "3.9"
 
 services:
   postgresql:
@@ -25,6 +25,7 @@ services:
 
     networks:
       - postgresql-network
+      - caddy
 
     env_file:
       - ../stack.env
