@@ -12,7 +12,7 @@ services:
       - GITEA__database__HOST="postgresql:${POSTGRES_PORT}"
       - GITEA__database__NAME="${GIT_DB}"
       - GITEA__database__USER="${GIT_DB_USER}"
-      - GITEA__database__PASSWD="${GIT_DB}"
+      - GITEA__database__PASSWD="${GIT_DB_USER_PASSWORD}"
     restart: always
     volumes:
       - /root/containers/gitea/data:/data
