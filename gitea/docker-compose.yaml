@@ -1,7 +1,7 @@
 version: "3.9"
 
 services:
-  server:
+  gitea:
     image: gitea/gitea:latest
     container_name: gitea
 
@@ -18,12 +18,12 @@ services:
       - /root/containers/gitea/data:/data
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "${GIT_UI_PORT}:3000"
+      - "${GIT_PORT}:22"
     networks:
       - postgresql-network
       - caddy-network
-    ports:
-      - "${GIT_PORT}:3000"
-      - "222:22"
 
 volumes:
   gitea:

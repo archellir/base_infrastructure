@@ -11,23 +11,23 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /root/containers/portainer/portainer-data:/data
-    networks:
-      - caddy-network
     ports:
       - 9000:9000
+    networks:
+      - caddy-network
 
   caddy:
     image: caddy:latest
     restart: unless-stopped
     container_name: caddy
-    ports:
-      - 80:80
-      - 443:443
     volumes:
       - /root/containers/caddy/Caddyfile:/etc/caddy/Caddyfile
       - /root/containers/caddy/site:/srv
       - /root/containers/caddy/caddy_data:/data
       - /root/containers/caddy/caddy_config:/config
+    ports:
+      - 80:80
+      - 443:443
     networks:
       - caddy-network
 
