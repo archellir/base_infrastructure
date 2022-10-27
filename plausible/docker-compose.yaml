@@ -2,11 +2,13 @@ version: "3.3"
 services:
   mail:
     image: bytemark/smtp
+    container_name: plausible_mail
     restart: always
 
   plausible_db:
     # supported versions are 12, 13, and 14
     image: postgres:14-alpine
+    container_name: plausible_db
     restart: always
     volumes:
       - /root/containers/plausible/db-data:/var/lib/postgresql/data
@@ -15,6 +17,7 @@ services:
 
   plausible_events_db:
     image: clickhouse/clickhouse-server:22.6-alpine
+    container_name: plausible_events_db
     restart: always
     volumes:
       - event-data:/var/lib/clickhouse
@@ -27,6 +30,7 @@ services:
 
   plausible:
     image: plausible/analytics:latest
+    container_name: plausible
     restart: always
     command: sh -c "sleep 10 && /entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh db init-admin && /entrypoint.sh run"
     depends_on:
