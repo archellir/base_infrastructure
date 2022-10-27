@@ -13,3 +13,7 @@ db.arcbjorn.com {
 git.arcbjorn.com {
   reverse_proxy gitea:3000
 }
+
+analytics.arcbjorn.com {
+  reverse_proxy plausible:8000
+}
