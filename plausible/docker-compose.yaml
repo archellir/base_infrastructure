@@ -20,7 +20,7 @@ services:
     container_name: plausible_events_db
     restart: always
     volumes:
-      - event-data:/var/lib/clickhouse
+      - /root/containers/plausible/clickhouse/event-data:/var/lib/clickhouse
       - /root/containers/plausible/clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/logging.xml:ro
       - /root/containers/plausible/clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/logging.xml:ro
     ulimits:
