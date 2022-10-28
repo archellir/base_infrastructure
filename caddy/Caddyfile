@@ -15,7 +15,7 @@ git.arcbjorn.com {
 }
 
 analytics.arcbjorn.com {
-  reverse_proxy 127.0.0.1:3005
+  reverse_proxy umami:3000
 }
 
 uptime.arcbjorn.com {
