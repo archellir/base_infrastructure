@@ -6,7 +6,7 @@ services:
     container_name: uptime-kuma
     restart: always
     volumes:
-      - /root/containers/uptime-kuma-data:/app/data
+      - /root/containers/uptime-kuma/data:/app/data
     networks:
       - caddy-network
     ports:
