@@ -1,0 +1,23 @@
+version: "3"
+
+services:
+  umami:
+    image: ghcr.io/mikecao/umami:postgresql-latest
+    ports:
+      - "127.0.0.1:${UMAMI_PORT}:3000"
+    env_file:
+      - ../stack.env
+    depends_on:
+      - umami_db
+    restart: always
+  umami_db:
+    image: postgres:12-alpine
+    env_file:
+      - ../stack.env
+    volumes:
+      - /containers/umami/schema.postgresql.sql:/docker-entrypoint-initdb.d/schema.postgresql.sql:ro
+      - /containers/umami/db:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  umami-db-data:
