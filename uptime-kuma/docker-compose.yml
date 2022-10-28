@@ -4,8 +4,15 @@ services:
   uptime-kuma:
     image: louislam/uptime-kuma:latest
     container_name: uptime-kuma
+    restart: always
     volumes:
       - /root/containers/uptime-kuma-data:/app/data
+    networks:
+      - caddy-network
     ports:
       - 3001:3001 # <Host Port>:<Container Port>
-    restart: always
+
+networks:
+  caddy-network:
+    external: true
+    name: caddy-network

@@ -10,5 +10,12 @@ services:
     volumes:
       - /root/containers/filebrowser/data:/data
       - /root/containers/filebrowser/config:/config
+    networks:
+      - caddy-network
     ports:
       - 8081:8080 # <Host Port>:<Container Port>
+
+networks:
+  caddy-network:
+    external: true
+    name: caddy-network
