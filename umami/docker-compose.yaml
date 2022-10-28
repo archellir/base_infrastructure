@@ -3,6 +3,8 @@ version: "3"
 services:
   umami:
     image: ghcr.io/mikecao/umami:postgresql-latest
+    container_name: umami
+
     ports:
       - "127.0.0.1:${UMAMI_PORT}:3000"
     env_file:
@@ -10,8 +12,11 @@ services:
     depends_on:
       - umami_db
     restart: always
+
   umami_db:
     image: postgres:12-alpine
+    container_name: umami_db
+
     env_file:
       - ../stack.env
     volumes:
