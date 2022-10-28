@@ -21,3 +21,7 @@ analytics.arcbjorn.com {
 uptime.arcbjorn.com {
   reverse_proxy uptime-kuma:3001
 }
+
+server.arcbjorn.com {
+  reverse_proxy filebrowser:8080
+}
