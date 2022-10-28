@@ -17,3 +17,7 @@ git.arcbjorn.com {
 analytics.arcbjorn.com {
   reverse_proxy plausible:8000
 }
+
+uptime.arcbjorn.com {
+  reverse_proxy uptime-kuma:3001
+}
