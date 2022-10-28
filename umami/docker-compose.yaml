@@ -10,7 +10,7 @@ services:
       - umami_db
 
     ports:
-      - "{UMAMI_PORT}:3000"
+      - "${UMAMI_PORT}:3000"
     networks:
       - caddy-network
     restart: always
