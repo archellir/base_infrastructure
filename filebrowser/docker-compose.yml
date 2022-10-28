@@ -1,0 +1,14 @@
+version: "3.3"
+
+services:
+  filebrowser:
+    image: hurlenko/filebrowser:latest
+    container_name: filebrowser
+    restart: unless-stopped
+    environment:
+      - FB_BASEURL=/
+    volumes:
+      - /root/containers/filebrowser/data:/data
+      - /root/containers/filebrowser/config:/config
+    ports:
+      - 8081:8080 # <Host Port>:<Container Port>
