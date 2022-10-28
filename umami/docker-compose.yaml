@@ -11,8 +11,9 @@ services:
 
     ports:
       - "127.0.0.1:${UMAMI_PORT}:3000"
-    networks:
-      - caddy-network
+
+    network_mode: "host"
+
     restart: always
 
   umami_db:
@@ -28,8 +29,3 @@ services:
 
 volumes:
   umami-db-data:
-
-networks:
-  caddy-network:
-    external: true
-    name: caddy-network
