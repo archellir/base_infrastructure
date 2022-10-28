@@ -4,6 +4,8 @@ services:
   umami:
     image: ghcr.io/mikecao/umami:postgresql-latest
     container_name: umami
+    restart: always
+
     env_file:
       - ../stack.env
     depends_on:
@@ -13,18 +15,20 @@ services:
       - "${UMAMI_PORT}:3000"
     networks:
       - caddy-network
-    restart: always
+      - umami-network
 
   umami_db:
     image: postgres:12-alpine
     container_name: umami_db
+    restart: always
 
     env_file:
       - ../stack.env
     volumes:
       - /containers/umami/schema.postgresql.sql:/docker-entrypoint-initdb.d/schema.postgresql.sql:ro
       - /containers/umami/db:/var/lib/postgresql/data
-    restart: always
+    networks:
+      - umami-network
 
 volumes:
   umami-db-data:
@@ -33,3 +37,4 @@ networks:
   caddy-network:
     external: true
     name: caddy-network
+  umami-network:
