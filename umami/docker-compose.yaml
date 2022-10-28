@@ -30,5 +30,6 @@ volumes:
   umami-db-data:
 
 networks:
-  external: true
-  name: caddy-network
+  caddy-network:
+    external: true
+    name: caddy-network
