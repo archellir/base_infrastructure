@@ -15,7 +15,7 @@ git.arcbjorn.com {
 }
 
 analytics.arcbjorn.com {
-  reverse_proxy plausible:8000
+  reverse_proxy 127.0.0.1:3005
 }
 
 uptime.arcbjorn.com {
