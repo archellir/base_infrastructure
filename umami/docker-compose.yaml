@@ -12,8 +12,6 @@ services:
     ports:
       - "127.0.0.1:${UMAMI_PORT}:3000"
 
-    network_mode: "host"
-
     restart: always
 
   umami_db:
