@@ -4,13 +4,15 @@ services:
   umami:
     image: ghcr.io/mikecao/umami:postgresql-latest
     container_name: umami
-
-    ports:
-      - "127.0.0.1:${UMAMI_PORT}:3000"
     env_file:
       - ../stack.env
     depends_on:
       - umami_db
+
+    ports:
+      - "127.0.0.1:${UMAMI_PORT}:3000"
+    networks:
+      - caddy-network
     restart: always
 
   umami_db:
@@ -26,3 +28,7 @@ services:
 
 volumes:
   umami-db-data:
+
+networks:
+  external: true
+  name: caddy-network
