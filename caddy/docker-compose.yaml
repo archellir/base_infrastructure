@@ -24,6 +24,9 @@ services:
       - /root/containers/caddy/Caddyfile:/etc/caddy/Caddyfile
       - /root/containers/caddy/data:/data/caddy
       - /root/containers/caddy/config:/config/caddy
+
+      # static websites
+      - /root/static/dashboard.arcbjorn.com:/static/dashboard.arcbjorn.com
     ports:
       - 80:80
       - 443:443

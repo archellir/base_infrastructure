@@ -27,7 +27,7 @@ server.arcbjorn.com {
 }
 
 dashboard.arcbjorn.com {
-  root * /containers/dashboard
+  root * /static/dashboard.arcbjorn.com
   file_server {
     hide .git
   }
