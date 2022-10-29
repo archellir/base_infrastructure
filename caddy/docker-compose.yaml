@@ -22,9 +22,8 @@ services:
     container_name: caddy
     volumes:
       - /root/containers/caddy/Caddyfile:/etc/caddy/Caddyfile
-      - /root/containers/caddy/site:/srv
-      - /root/containers/caddy/caddy_data:/data
-      - /root/containers/caddy/caddy_config:/config
+      - /root/containers/caddy/data:/data/caddy
+      - /root/containers/caddy/config:/config/caddy
     ports:
       - 80:80
       - 443:443
