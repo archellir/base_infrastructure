@@ -28,6 +28,7 @@ server.arcbjorn.com {
 
 dashboard.arcbjorn.com {
   root * /static/dashboard.arcbjorn.com
+  try_files {path} /index.html
   file_server {
     hide .git
   }
