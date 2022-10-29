@@ -25,3 +25,10 @@ uptime.arcbjorn.com {
 server.arcbjorn.com {
   reverse_proxy filebrowser:8080
 }
+
+dashboard.arcbjorn.com {
+  root * /containers/dashboard
+  file_server {
+    hide .git
+  }
+}
