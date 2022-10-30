@@ -33,3 +33,7 @@ dashboard.arcbjorn.com {
     hide .git
   }
 }
+
+logs.arcbjorn.com {
+  reverse_proxy dozzle:8080
+}
