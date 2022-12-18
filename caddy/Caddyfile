@@ -37,3 +37,7 @@ dashboard.arcbjorn.com {
 logs.arcbjorn.com {
   reverse_proxy dozzle:8080
 }
+
+memos.arcbjorn.com {
+  reverse_proxy dozzle:8080
+}

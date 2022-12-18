@@ -1,9 +1,16 @@
 version: "3.0"
 services:
   memos:
-    image: neosmemo/memos:latest
     container_name: memos
+    image: neosmemo/memos:latest
     volumes:
       - /containers/memos:/var/opt/memos
     ports:
       - 5230:5230
+    networks:
+      - caddy-network
+
+networks:
+  caddy-network:
+    external: true
+    name: caddy-network
