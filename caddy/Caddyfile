@@ -39,5 +39,5 @@ logs.arcbjorn.com {
 }
 
 memos.arcbjorn.com {
-  reverse_proxy dozzle:8080
+  reverse_proxy memos:5230
 }
