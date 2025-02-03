@@ -41,3 +41,11 @@ logs.arcbjorn.com {
 memos.arcbjorn.com {
   reverse_proxy memos:5230
 }
+
+homepage.arcbjorn.com {
+  root * /static/homepage.arcbjorn.com
+  try_files {path} /index.html
+  file_server {
+    hide .git
+  }
+}
