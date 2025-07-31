@@ -2,6 +2,14 @@
 
 Infrastructure for base server
 
+First step:
+
+1. Start Caddy & Portainer with with `docker_compose.yml` in `/caddy`
+2. Start other services using `docker_compose.yml` 1 by 1
+
+
+#### TO BE DEPRECATED: PORTAINER COOMUNITY EDITION REMOVED FUNCTIONALITY
+
 #### For postgreSQL multiple databases scripts:
 
 ```sh
