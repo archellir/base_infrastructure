@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: base-infrastructure
+data:
+  # PostgreSQL Configuration
+  POSTGRES_PORT: "5432"
+  
+  # Umami Configuration  
+  UMAMI_PORT: "3000"
+  
+  # Add other non-sensitive config values as needed
+  # These correspond to your stack.env variables

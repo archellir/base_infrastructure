@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memos
+  namespace: base-infrastructure
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: memos
+  template:
+    metadata:
+      labels:
+        app: memos
+    spec:
+      containers:
+      - name: memos
+        image: neosmemo/memos:stable
+        ports:
+        - containerPort: 5230
+          name: http
+          protocol: TCP
+        env:
+        - name: MEMOS_MODE
+          value: "prod"
+        - name: MEMOS_PORT
+          value: "5230"
+        volumeMounts:
+        - name: memos-data
+          mountPath: /var/opt/memos
+        livenessProbe:
+          httpGet:
+            path: /api/v1/ping
+            port: http
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+          periodSeconds: 30
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/v1/ping
+            port: http
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: memos-data
+        persistentVolumeClaim:
+          claimName: memos-data
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: memos-data
+  namespace: base-infrastructure
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: memos
+  namespace: base-infrastructure
+spec:
+  selector:
+    app: memos
+  ports:
+  - port: 5230
+    targetPort: http
+    name: http
+    protocol: TCP
+  type: ClusterIP

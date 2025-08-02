@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: umami
+  namespace: base-infrastructure
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: umami
+  template:
+    metadata:
+      labels:
+        app: umami
+    spec:
+      containers:
+      - name: umami
+        image: docker.umami.is/umami-software/umami:postgresql-latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: UMAMI_DATABASE_URL
+        livenessProbe:
+          httpGet:
+            path: /api/heartbeat
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /api/heartbeat
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      initContainers:
+      - name: wait-for-db
+        image: postgres:12-alpine
+        command: ['sh', '-c']
+        args:
+        - |
+          until pg_isready -h postgresql -p 5432 -U postgres; do
+            echo "Waiting for PostgreSQL database..."
+            sleep 2
+          done
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: umami
+  namespace: base-infrastructure
+spec:
+  selector:
+    app: umami
+  ports:
+  - port: 3000
+    targetPort: 3000
+  type: ClusterIP

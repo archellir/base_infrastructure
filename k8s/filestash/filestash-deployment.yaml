@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: filestash
+  namespace: base-infrastructure
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: filestash
+  template:
+    metadata:
+      labels:
+        app: filestash
+    spec:
+      containers:
+      - name: filestash
+        image: machines/filestash:latest
+        ports:
+        - containerPort: 8334
+        volumeMounts:
+        - name: filestash-data
+          mountPath: /app/data/state
+        - name: filestash-config
+          mountPath: /app/data/config
+        env:
+        - name: APPLICATION_URL
+          value: "https://server.arcbjorn.com"
+        livenessProbe:
+          httpGet:
+            path: /api/session
+            port: 8334
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /api/session
+            port: 8334
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: filestash-data
+        persistentVolumeClaim:
+          claimName: filestash-data
+      - name: filestash-config
+        persistentVolumeClaim:
+          claimName: filestash-config
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: filestash-data
+  namespace: base-infrastructure
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: filestash-config
+  namespace: base-infrastructure
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: filebrowser
+  namespace: base-infrastructure
+spec:
+  selector:
+    app: filestash
+  ports:
+  - port: 8080
+    targetPort: 8334
+  type: ClusterIP

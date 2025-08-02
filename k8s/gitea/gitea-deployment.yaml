@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitea
+  namespace: base-infrastructure
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitea
+  template:
+    metadata:
+      labels:
+        app: gitea
+    spec:
+      containers:
+      - name: gitea
+        image: gitea/gitea:latest
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        - containerPort: 22
+          name: ssh
+          protocol: TCP
+        env:
+        - name: USER_UID
+          value: "1000"
+        - name: USER_GID
+          value: "1000"
+        - name: GITEA__database__DB_TYPE
+          value: "postgres"
+        - name: GITEA__database__HOST
+          value: "postgresql:5432"
+        - name: GITEA__database__NAME
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: GIT_DB
+        - name: GITEA__database__USER
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: GIT_DB_USER
+        - name: GITEA__database__PASSWD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: GIT_DB_USER_PASSWORD
+        - name: GITEA__server__DOMAIN
+          value: "git.arcbjorn.com"
+        - name: GITEA__server__SSH_DOMAIN
+          value: "git.arcbjorn.com"
+        - name: GITEA__server__ROOT_URL
+          value: "https://git.arcbjorn.com/"
+        volumeMounts:
+        - name: gitea-data
+          mountPath: /data
+        - name: timezone
+          mountPath: /etc/timezone
+          readOnly: true
+        - name: localtime
+          mountPath: /etc/localtime
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /api/healthz
+            port: http
+          initialDelaySeconds: 200
+          timeoutSeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 10
+        readinessProbe:
+          httpGet:
+            path: /api/healthz
+            port: http
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+      volumes:
+      - name: gitea-data
+        persistentVolumeClaim:
+          claimName: gitea-data
+      - name: timezone
+        hostPath:
+          path: /etc/timezone
+          type: File
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+          type: File
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gitea-data
+  namespace: base-infrastructure
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitea
+  namespace: base-infrastructure
+spec:
+  selector:
+    app: gitea
+  ports:
+  - port: 3000
+    targetPort: http
+    name: http
+    protocol: TCP
+  - port: 22
+    targetPort: ssh
+    name: ssh
+    protocol: TCP
+  type: ClusterIP
