@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: k8s-webui-postgres
+  namespace: k8s-webui
+spec:
+  serviceName: k8s-webui-postgres-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-webui-postgres
+  template:
+    metadata:
+      labels:
+        app: k8s-webui-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_DB
+          value: k8s_webui
+        - name: POSTGRES_USER
+          value: k8s_user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: k8s-webui-secrets
+              key: POSTGRES_PASSWORD
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U k8s_user -d k8s_webui
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U k8s_user -d k8s_webui
+          initialDelaySeconds: 5
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 5Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-webui-postgres
+  namespace: k8s-webui
+spec:
+  selector:
+    app: k8s-webui-postgres
+  ports:
+  - port: 5432
+    targetPort: postgres
+    name: postgres
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-webui-postgres-headless
+  namespace: k8s-webui
+spec:
+  selector:
+    app: k8s-webui-postgres
+  ports:
+  - port: 5432
+    targetPort: postgres
+    name: postgres
+  clusterIP: None
