@@ -16,6 +16,7 @@ spec:
     - server.arcbjorn.com
     - logs.arcbjorn.com
     - memos.arcbjorn.com
+    - k8s.arcbjorn.com
     secretName: arcbjorn-tls
   rules:
   
