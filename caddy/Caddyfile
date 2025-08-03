@@ -49,3 +49,11 @@ homepage.arcbjorn.com {
     hide .git
   }
 }
+
+argentinamusic.space {
+  root * /static/argentinamusic.space
+  try_files {path} /index.html
+  file_server {
+    hide .git
+  }
+}
