@@ -57,3 +57,11 @@ argentinamusic.space {
     hide .git
   }
 }
+
+humansconnect.ai {
+  root * /static/humansconnect.ai
+  try_files {path} /index.html
+  file_server {
+    hide .git
+  }
+}
