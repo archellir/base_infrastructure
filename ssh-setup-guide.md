@@ -4,10 +4,10 @@ This guide covers setting up the migration process when connecting to your serve
 
 ## Architecture Overview
 
-Based on your k8s-migration.md, you have:
-- **Host Server**: macOS with Docker Compose services
-- **K8s Cluster**: Running in Multipass VM (Ubuntu 22.04)
-- **Access Method**: SSH connection to host server
+Your current setup:
+- **Linux Server**: Ubuntu with Docker Compose services and Kubernetes
+- **K8s Cluster**: Single-node cluster running directly on the server  
+- **Access Method**: SSH connection to server
 
 ## Setup Options
 
@@ -21,13 +21,8 @@ This approach runs the migration script directly on your server via SSH.
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
-# 2. Configure kubectl to access your K8s cluster
-# Copy kubeconfig from Multipass VM
-multipass exec k8s-master -- sudo cat /etc/kubernetes/admin.conf > ~/.kube/config
-
-# 3. Update kubeconfig server IP to VM IP (find VM IP first)
-VM_IP=$(multipass info k8s-master | grep IPv4 | awk '{print $2}')
-sed -i "s/127.0.0.1:6443/$VM_IP:6443/g" ~/.kube/config
+# 2. Configure kubectl (already done during K8s setup)
+export KUBECONFIG=/etc/kubernetes/admin.conf
 
 # 4. Test kubectl access
 kubectl cluster-info

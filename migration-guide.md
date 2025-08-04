@@ -4,7 +4,7 @@ This guide provides a complete step-by-step migration process from Docker Compos
 
 ## Prerequisites
 
-- ✅ Kubernetes cluster running (confirmed in k8s-migration.md)
+- ✅ Kubernetes cluster running (see k8s-setup.md)
 - ✅ kubectl configured and working
 - ✅ Access to current Docker Compose services
 - ✅ Portainer secrets available
