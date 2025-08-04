@@ -1,260 +1,212 @@
-# base_infrastructure
+# Base Infrastructure
 
-Infrastructure for base server
+Self-hosted services infrastructure with Docker Compose and Kubernetes deployment options.
 
-First step:
+## Architecture
 
-1. Start Caddy & Portainer with with `docker_compose.yml` in `/caddy`
-2. Start other services using `docker_compose.yml` 1 by 1
+### Services
+- **PostgreSQL** - Shared database with multiple database support
+- **Gitea** - Git hosting service
+- **Umami** - Analytics platform  
+- **Memos** - Note-taking application
+- **Filestash** - File management interface
+- **Uptime Kuma** - Uptime monitoring
+- **Dozzle** - Docker logs viewer
+- **k8s-webui** - Kubernetes web interface
 
+### Docker Compose Architecture (Legacy)
+```
+External Request → Caddy (Reverse Proxy) → Service Container → PostgreSQL Database
 
-#### TO BE DEPRECATED: PORTAINER COOMUNITY EDITION REMOVED FUNCTIONALITY
-
-#### For postgreSQL multiple databases scripts:
-
-```sh
-chmod +x scripts/create-multiple-postgresql-databases.sh
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│    Caddy    │    │  Services   │    │ PostgreSQL  │
+│   (Proxy)   │◄───┤             ├───►│ (Database)  │
+│    :80/:443 │    │ Gitea       │    │    :5432    │
+└─────────────┘    │ Umami       │    └─────────────┘
+                   │ Memos       │
+                   │ Uptime-Kuma │
+                   │ FileBrowser │
+                   │ pgAdmin     │
+                   │ Dozzle      │
+                   └─────────────┘
 ```
 
-#### For [pgAdmin](https://www.pgadmin.org/docs/pgadmin4/latest/container_deployment.html#mapped-files-and-directories):
+### Kubernetes Architecture (Current)
+```
+External Request → Ingress → Service → Pod → Container → Database
 
-```sh
-sudo chown -R 5050:5050 <host_directory>
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                    Kubernetes Control Plane                                  │
+│                                                                              │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐              │
+│  │   API Server    │  │      etcd       │  │   Scheduler     │              │
+│  │   (kube-api)    │  │   (Database)    │  │ (kube-scheduler)│              │
+│  │    Port 6443    │  │  Ports 2379-80  │  │   Port 10259   │              │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘              │
+│                                                                              │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐              │
+│  │   Controller    │  │     kubectl     │  │    kubeadm      │              │
+│  │    Manager      │  │  (CLI Client)   │  │ (Cluster Init)  │              │
+│  │   Port 10257    │  │                 │  │                 │              │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘              │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          Node Components                                     │
+│                                                                              │
+│  ┌─────────────────┐                                                         │
+│  │     kubelet     │  ← Manages Pods and Containers                          │
+│  │   Port 10250    │                                                         │
+│  └──────┬──────────┘                                                         │
+│         │                                                                    │
+│         ▼                                                                    │
+│  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐        │
+│  │  nginx-ingress  │     │   K8s Services  │     │      Pods       │        │
+│  │  (Controller)   │────►│   (ClusterIP)   │────►│                 │        │
+│  │   Port 80/443   │     │                 │     │ gitea-pod       │        │
+│  └─────────────────┘     │ gitea:3000      │     │ umami-pod       │        │
+│                          │ umami:3000      │     │ memos-pod       │        │
+│  ┌─────────────────┐     │ memos:5230      │     │ filestash-pod   │        │
+│  │   kube-proxy    │     │ filebrowser:8080│     │ uptime-pod      │        │
+│  │ (Load Balancer) │     │ uptime:3001     │     │ dozzle-pod      │        │
+│  │                 │     │ dozzle:8080     │     │ k8s-webui-pod   │        │
+│  └─────────────────┘     └─────────────────┘     └─────────┬───────┘        │
+│                                                            │                │
+│                                                            ▼                │
+│  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐        │
+│  │   containerd    │     │  Containers     │     │ PostgreSQL      │        │
+│  │ (Runtime + CRI) │────►│                 │────►│ (StatefulSet)   │        │
+│  │                 │     │ gitea:latest    │     │                 │        │
+│  │ Image Storage   │     │ umami:latest    │     │ Port 5432       │        │
+│  │ Container Mgmt  │     │ memos:latest    │     └─────────────────┘        │
+│  └─────────────────┘     │ filestash:latest│                                │
+│                          │ uptime:latest   │     ┌─────────────────┐        │
+│  ┌─────────────────┐     │ dozzle:latest   │     │ PersistentVols  │        │
+│  │    Calico       │     │ k8s-webui:latest│     │                 │        │
+│  │  (CNI Plugin)   │     └─────────────────┘     │ postgresql-pvc  │        │
+│  │                 │                             │ gitea-pvc       │        │
+│  │ Pod Network     │     ┌─────────────────┐     │ memos-pvc       │        │
+│  │ 192.168.0.0/16  │     │   Secrets       │     │ filestash-pvc   │        │
+│  └─────────────────┘     │                 │     │ uptime-pvc      │        │
+│                          │ DB passwords    │     └─────────────────┘        │
+│                          │ API keys        │                                │
+│                          │ Certificates    │     ┌─────────────────┐        │
+│                          └─────────────────┘     │  Host Storage   │        │
+│                                                  │                 │        │
+│                          ┌─────────────────┐     │ /root/containers│        │
+│                          │   ConfigMaps    │     │ (Volume Mounts) │        │
+│                          │                 │     └─────────────────┘        │
+│                          │ Init scripts    │                                │
+│                          │ Configuration   │                                │
+│                          │ Environment     │                                │
+│                          └─────────────────┘                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Data Flow Sequence:
+1. External HTTP/HTTPS → nginx-ingress (Port 80/443)
+2. Ingress routes by hostname → K8s Service (ClusterIP via kube-proxy)
+3. Service load-balances → Pod (Scheduled by kube-scheduler)
+4. kubelet manages → Container (via containerd runtime)
+5. Container connects → PostgreSQL StatefulSet (Database)
+6. PostgreSQL stores data → PersistentVolume (Host storage)
+7. All communication secured by API Server and managed by Controller Manager
+8. Pod-to-pod networking handled by Calico CNI (192.168.0.0/16)
 ```
 
-#### Database backup & restore:
+## Current Setup
 
-Backup:
+### Docker Compose (Legacy)
+Individual service directories with `docker-compose.yml` files:
+```bash
+# Start core services
+cd caddy && docker-compose up -d
+cd postgresql && docker-compose up -d
 
-```sh
-docker exec -t <postgres-container-id> pg_dumpall -c -U <user> > dump_`date +%d-%m-%Y"_"%H_%M_%S`.sql
+# Start application services
+cd gitea && docker-compose up -d
+cd umami && docker-compose up -d
+# ... repeat for other services
 ```
 
-Restore:
+### Kubernetes (Current)
+- **Cluster**: Single-node Kubernetes v1.29.15 on Ubuntu Linux
+- **Control Plane**: API Server, etcd, Scheduler, Controller Manager
+- **Node Components**: kubelet, kube-proxy, containerd
+- **Network**: Calico CNI (192.168.0.0/16)
+- **Ingress**: nginx-ingress controller
+- **Storage**: PersistentVolumes for stateful services
+- **Management**: kubectl CLI, kubeadm for cluster management
 
-```sh
-cat <dump_name>.sql | docker exec -i <postgres-container-id> psql -U <user>
+## Migration Status
+
+✅ **Kubernetes cluster ready**  
+🔄 **Migration in progress** - Use `./migration-commands.sh` for step-by-step migration  
+📋 **Documentation**: See `k8s-setup.md` and `migration-guide.md`
+
+## Quick Commands
+
+### Kubernetes Management
+```bash
+# Check cluster status
+kubectl get nodes
+kubectl get pods --all-namespaces
+
+# Migration script
+./migration-commands.sh help
+./migration-commands.sh phase0  # Start with backup
 ```
 
-#### Example of connection:
+### Database Operations
+```bash
+# Backup all databases
+docker exec -t <postgres-container> pg_dumpall -c -U <user> > backup_$(date +%Y%m%d).sql
 
-```sh
-# host = container_name
+# Restore databases  
+cat backup.sql | docker exec -i <postgres-container> psql -U <user>
+```
+
+### Required Permissions
+```bash
+# pgAdmin directory permissions (Docker Compose only)
+sudo chown -R 5050:5050 /root/containers/pgadmin
+
+# PostgreSQL multiple databases script
+chmod +x postgresql/create-multiple-postgresql-databases.sh
+```
+
+## File Structure
+```
+├── k8s/                    # Kubernetes manifests
+│   ├── postgresql/         # Database StatefulSet
+│   ├── gitea/             # Git service  
+│   ├── umami/             # Analytics service
+│   ├── memos/             # Notes service
+│   ├── filestash/         # File management
+│   ├── uptime-kuma/       # Monitoring service
+│   ├── dozzle/            # Log viewer
+│   ├── k8s-webui/         # Kubernetes web UI
+│   ├── ingress/           # Ingress rules
+│   └── namespace/         # Secrets, ConfigMaps
+├── caddy/                  # Reverse proxy (Docker)
+├── postgresql/             # Database (Docker)
+├── migration-commands.sh   # Migration automation
+├── migration-guide.md     # Detailed migration steps
+└── k8s-setup.md           # Kubernetes installation guide
+```
+
+## Connection Examples
+```bash
+# Database connection format
 postgres://username:password@container_name:port/db_name
+
+# Internal service communication (Docker)
+http://service_name:port
+
+# Kubernetes service communication
+http://service-name.namespace.svc.cluster.local:port
 ```
 
 ---
 
-## Kubernetes Setup (Learning Environment)
-
-### Architecture Overview
-
-```
-┌─────────────────────┐
-│   Control Plane     │
-│ ┌─────────────────┐ │
-│ │   API Server    │ │ ← Port 6443
-│ │     (kube-      │ │
-│ │   apiserver)    │ │
-│ └─────────────────┘ │
-│ ┌─────────────────┐ │
-│ │      etcd       │ │ ← Ports 2379-2380
-│ │   (database)    │ │
-│ └─────────────────┘ │
-│ ┌─────────────────┐ │
-│ │   Scheduler     │ │ ← Port 10259
-│ │ (kube-scheduler)│ │
-│ └─────────────────┘ │
-│ ┌─────────────────┐ │
-│ │   Controller    │ │ ← Port 10257
-│ │    Manager      │ │
-│ └─────────────────┘ │
-└─────────────────────┘
-         │
-    ┌────▼────┐
-    │ kubelet │ ← Port 10250
-    └─────────┘
-         │
-    ┌────▼────┐
-    │Container│
-    │ Runtime │
-    │(containerd)
-    └─────────┘
-```
-
-### Setup Instructions
-
-#### For macOS (Development/Learning)
-
-**Prerequisites:**
-- Homebrew installed
-- 8GB+ RAM recommended
-- 20GB+ free disk space
-
-**Step 1: Install Multipass**
-```sh
-# Install multipass for lightweight Ubuntu VMs
-brew install multipass
-
-# Create Ubuntu VM with sufficient resources
-multipass launch --name k8s-master --cpus 2 --memory 4G --disk 20G 22.04
-
-# Shell into the VM
-multipass shell k8s-master
-```
-
-**Step 2: Inside the VM, follow Linux instructions below**
-
-#### For Linux (Local Development)
-
-**System Requirements:**
-- Arch Linux / Ubuntu 20.04+ / CentOS 8+ / RHEL 8+
-- 2GB+ RAM, 2+ CPU cores
-- Swap disabled
-- Unique hostname and MAC address
-
-##### Arch Linux Setup
-
-**Step 1: Prepare System**
-```sh
-# Disable swap (required for kubelet)
-sudo swapoff -a
-sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
-
-# Load required kernel modules
-cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
-overlay
-br_netfilter
-EOF
-
-sudo modprobe overlay
-sudo modprobe br_netfilter
-
-# Set required sysctl params
-cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-net.bridge.bridge-nf-call-iptables  = 1
-net.bridge.bridge-nf-call-ip6tables = 1
-net.ipv4.ip_forward                 = 1
-EOF
-
-sudo sysctl --system
-```
-
-**Step 2: Install Container Runtime (containerd)**
-```sh
-# Install containerd
-sudo pacman -S containerd
-
-# Configure containerd
-sudo mkdir -p /etc/containerd
-containerd config default | sudo tee /etc/containerd/config.toml
-
-# Enable SystemdCgroup (required for kubeadm)
-sudo sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/config.toml
-
-# Start and enable containerd
-sudo systemctl start containerd
-sudo systemctl enable containerd
-```
-
-**Step 3: Install Kubernetes Components**
-```sh
-# Install from AUR (using yay or paru)
-yay -S kubeadm-bin kubelet-bin kubectl-bin
-
-# Or build manually from AUR
-git clone https://aur.archlinux.org/kubeadm-bin.git
-cd kubeadm-bin && makepkg -si
-cd .. && git clone https://aur.archlinux.org/kubelet-bin.git
-cd kubelet-bin && makepkg -si
-cd .. && git clone https://aur.archlinux.org/kubectl-bin.git
-cd kubectl-bin && makepkg -si
-
-# Enable kubelet
-sudo systemctl enable kubelet
-```
-
-##### Ubuntu/Debian Setup
-
-**Step 1: Prepare System** (same as Arch)
-
-**Step 2: Install Container Runtime (containerd)**
-```sh
-# Install containerd
-sudo apt-get update
-sudo apt-get install -y containerd
-
-# Configure containerd (same as Arch)
-sudo mkdir -p /etc/containerd
-containerd config default | sudo tee /etc/containerd/config.toml
-sudo sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/config.toml
-sudo systemctl restart containerd
-sudo systemctl enable containerd
-```
-
-**Step 3: Install Kubernetes Components**
-```sh
-# Add Kubernetes apt repository
-sudo apt-get install -y apt-transport-https ca-certificates curl gpg
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
-
-# Install kubelet, kubeadm, kubectl
-sudo apt-get update
-sudo apt-get install -y kubelet kubeadm kubectl
-sudo apt-mark hold kubelet kubeadm kubectl
-sudo systemctl enable kubelet
-```
-
-#### Common Steps (All Distributions)
-
-**Step 4: Initialize Kubernetes Cluster**
-```sh
-# Initialize cluster (single-node setup)
-sudo kubeadm init --pod-network-cidr=192.168.0.0/16
-
-# Set up kubectl for regular user
-mkdir -p $HOME/.kube
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-# Allow pods to be scheduled on control-plane node (single-node setup)
-kubectl taint nodes --all node-role.kubernetes.io/control-plane-
-```
-
-**Step 5: Install Network Plugin (Calico)**
-```sh
-# Install Calico operator
-kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/tigera-operator.yaml
-
-# Download and apply custom resource for Calico
-curl https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/custom-resources.yaml -O
-kubectl create -f custom-resources.yaml
-```
-
-**Step 6: Install Ingress Controller (Nginx)**
-```sh
-# Install nginx-ingress
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/baremetal/deploy.yaml
-```
-
-**Step 7: Verify Installation**
-```sh
-# Check all pods are running
-kubectl get pods --all-namespaces
-
-# Check nodes are ready
-kubectl get nodes
-
-# Verify Calico is working
-kubectl get pods -n calico-system
-```
-
-### Next Steps
-
-Once Kubernetes is running, you can deploy the infrastructure services using the manifests in the `k8s/` directory:
-
-```sh
-# Deploy all services
-kubectl apply -f k8s/
-```
+*Infrastructure supporting distributed applications with high availability and scalability*
