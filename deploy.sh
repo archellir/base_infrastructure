@@ -5,32 +5,59 @@
 
 set -e
 
+# Progress tracking
+TOTAL_STEPS=8
+CURRENT_STEP=0
+
+progress() {
+    CURRENT_STEP=$((CURRENT_STEP + 1))
+    echo ""
+    echo "[$CURRENT_STEP/$TOTAL_STEPS] $1"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+}
+
+wait_for_condition() {
+    echo "⏳ $1"
+    local timeout=60
+    local count=0
+    while [ $count -lt $timeout ]; do
+        if eval "$2"; then
+            echo "✅ Ready!"
+            return 0
+        fi
+        printf "."
+        sleep 1
+        count=$((count + 1))
+    done
+    echo "⚠️  Timeout waiting for condition, continuing..."
+    return 1
+}
+
 echo "🚀 Starting Kubernetes infrastructure deployment..."
+echo "   Total steps: $TOTAL_STEPS"
+echo ""
 
-# Step 1: Create namespace and wait for it to be ready
-echo "📦 Creating namespace..."
+# Step 1: Create namespace
+progress "📦 Creating namespace"
 kubectl apply -f k8s/namespace/namespace.yaml
-kubectl wait --for=condition=Active namespace/base-infrastructure --timeout=30s
+wait_for_condition "Waiting for namespace to be active" "kubectl get namespace base-infrastructure -o jsonpath='{.status.phase}' 2>/dev/null | grep -q 'Active'"
 
-# Step 1b: Apply secrets and configmaps after namespace is ready
-echo "🔑 Creating secrets and configmaps..."
+# Step 2: Apply secrets and configmaps
+progress "🔑 Creating secrets and configmaps"
 kubectl apply -f k8s/namespace/secrets.yaml
 kubectl apply -f k8s/namespace/configmap.yaml
 
-# Step 2: Create storage resources
-echo "💾 Setting up storage..."
+# Step 3: Create storage resources
+progress "💾 Setting up storage"
 kubectl apply -f k8s/storage/
 
-# Step 3: Deploy PostgreSQL database (core dependency)
-echo "🗄️  Deploying PostgreSQL database..."
+# Step 4: Deploy PostgreSQL database (core dependency)
+progress "🗄️  Deploying PostgreSQL database"
 kubectl apply -f k8s/postgresql/
-
-# Step 4: Wait for PostgreSQL to be ready
-echo "⏳ Waiting for PostgreSQL to be ready..."
-kubectl wait --for=condition=ready pod -l app=postgresql -n base-infrastructure --timeout=300s
+wait_for_condition "Waiting for PostgreSQL to be ready" "kubectl get pods -l app=postgresql -n base-infrastructure -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q 'Running'"
 
 # Step 5: Deploy application services
-echo "🌐 Deploying application services..."
+progress "🌐 Deploying application services"
 kubectl apply -f k8s/gitea/
 kubectl apply -f k8s/umami/
 kubectl apply -f k8s/memos/
@@ -38,12 +65,12 @@ kubectl apply -f k8s/filestash/
 kubectl apply -f k8s/uptime-kuma/
 
 # Step 6: Deploy static sites
-echo "📄 Deploying static sites..."
+progress "📄 Deploying static sites"
 kubectl apply -f k8s/static-sites/
 
 # Step 7: Ask about ingress deployment
-echo ""
-read -p "🔀 Deploy ingress routing? (y/N): " -n 1 -r
+progress "🔀 Configuring ingress routing"
+read -p "Deploy ingress routing? (y/N): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "🔀 Setting up ingress routing..."
@@ -53,6 +80,7 @@ else
 fi
 
 # Step 8: Show deployment status
+progress "✅ Deployment complete! Checking status"
 echo ""
 echo "✅ Deployment complete! Checking status..."
 echo ""
