@@ -13,107 +13,108 @@ Self-hosted services infrastructure deployed on Kubernetes with persistent stora
 
 ## Architecture
 
-### Kubernetes Architecture
-
-**Data Flow:**
+### Request Flow
 ```
-External Request → Ingress Controller → Service → Pod → Container
-
-┌─────────────────────────────────────────────────────────────┐
-│                     Kubernetes Cluster                      │
-│                                                             │
-│  Internet → Ingress → Services → Pods → Containers          │
-│                                                             │
-│  Services:                    Storage:                      │
-│  • gitea (git.arcbjorn.com)   • PostgreSQL (StatefulSet)    │
-│  • umami (analytics.*)        • PersistentVolumes           │
-│  • memos (memos.*)            • Local storage (/root/...)   │
-│  • filestash (server.*)                                     │
-│  • uptime-kuma (uptime.*)     Database:                     │
-│  • static sites               • Shared PostgreSQL           │
-│                               • Multiple databases          │
-└─────────────────────────────────────────────────────────────┘
+Internet → Ingress → Services → Pods → Containers
 ```
 
-**Detailed Architecture:**
+### Control Plane
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                       Kubernetes Control Plane                          │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
+│  │ kube-api    │  │    etcd     │  │ kube-sched  │  │ controller  │     │
+│  │ server      │  │ (cluster    │  │ uler        │  │ manager     │     │
+│  │ :6443       │  │ state DB)   │  │ :10259      │  │ :10257      │     │
+│  │ REST API    │  │ key-value   │  │ pod assign  │  │ reconcile   │     │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘     │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-┌───────────────────────────────────────────────────────────────────┐
-│                    Kubernetes Control Plane                       │
-│                                                                   │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐    │
-│  │   API Server    │  │      etcd       │  │   Scheduler     │    │
-│  │   (kube-api)    │  │   (Database)    │  │ (kube-scheduler)│    │
-│  │    Port 6443    │  │  Ports 2379-80  │  │   Port 10259    │    │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘    │
-│                                                                   │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐    │
-│  │   Controller    │  │     kubectl     │  │    kubeadm      │    │
-│  │    Manager      │  │  (CLI Client)   │  │ (Cluster Init)  │    │
-│  │   Port 10257    │  │                 │  │                 │    │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘    │
-└───────────────────────────────────────────────────────────────────┘
-                                   │
-                                   ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                          Node Components                               │
-│                                                                        │
-│  ┌─────────────────┐                                                   │
-│  │     kubelet     │  ← Manages Pods and Containers                    │
-│  │   Port 10250    │                                                   │
-│  └──────┬──────────┘                                                   │
-│         │                                                              │
-│         ▼                                                              │
-│  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐   │
-│  │ Ingress-nginx   │     │   K8s Services  │     │      Pods       │   │
-│  │  (Controller)   │────►│   (ClusterIP)   │────►│                 │   │
-│  │   Port 80/443   │     │                 │     │ gitea           │   │
-│  └─────────────────┘     │ gitea:3000      │     │ umami           │   │
-│                          │ umami:3000      │     │ memos           │   │
-│  ┌─────────────────┐     │ memos:5230      │     │ filestash       │   │
-│  │   kube-proxy    │     │ filestash:8080  │     │ uptime-kuma     │   │
-│  │ (Load Balancer) │     │ uptime-kuma:3001│     │ postgresql      │   │
-│  │                 │     │ postgresql:5432 │     │ static-sites        │
-│                          │ static-sites:80 │     │                     │
-│  └─────────────────┘     └─────────────────┘     └─────────┬───────┘   │
-│                                                            │           │
-│                                                            ▼           │
-│  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────    │
-│  │   containerd    │     │  Containers     │     │ PostgreSQL      │   │
-│  │ (Runtime + CRI) │────►│                 │────►│ (StatefulSet)   │   │
-│  │                 │     │ gitea/gitea     │     │                 │   │
-│  │ Image Storage   │     │ umami-software  │     │ Port 5432       │   │
-│  │ Container Mgmt  │     │ neosmemo/memos  │     └─────────────────┘   │
-│  └─────────────────┘     │ machines/files* │                           │
-│                          │ louislam/uptime │     ┌─────────────────┐   │
-│  ┌─────────────────┐     │ nginx:alpine    │     │ PersistentVols  │   │
-│  │    Calico       │     │                 │     │                 │   │
-│  │  (CNI Plugin)   │     └─────────────────┘     │ postgresql-data │   │
-│  │                 │                             │ gitea-data      │   │
-│  │ Pod Network     │     ┌─────────────────┐     │ memos-data      │   │
-│  │ 192.168.0.0/16  │     │   Secrets       │     │ filestash-data  │   │
-│  └─────────────────┘     │                 │     │ filestash-config│   │
-│                          │ app-secrets     │     │ uptime-kuma-data│   │
-│                          │ DB credentials  │     └─────────────────┘   │
-│                          │ Service config  │                           │
-│                          └─────────────────┘     ┌─────────────────┐   │
-│                                                  │  Host Storage   │   │
-│                          ┌─────────────────┐     │                 │   │
-│                          │   ConfigMaps    │     │ /root/containers│   │
-│                          │                 │     │ (Local volumes) │   │
-│                          │ postgresql-init │     └─────────────────┘   │
-│                          │ static-nginx    │                           │
-│                          └─────────────────┘                           │
-└────────────────────────────────────────────────────────────────────────┘
+### Worker Node
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           Worker Node                                   │
+│                                                                         │
+│ Management Tools:                                                       │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐                        │
+│ │   kubectl   │ │   kubeadm   │ │ containerd  │                        │
+│ │ CLI client  │ │ bootstrap   │ │ runtime     │                        │
+│ └─────────────┘ └─────────────┘ └─────────────┘                        │
+│                                                                         │
+│ Node Components:                                                        │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐                        │
+│ │   kubelet   │ │ kube-proxy  │ │   CoreDNS   │                        │
+│ │ :10250      │ │ networking  │ │ DNS: 53     │                        │
+│ │ node agent  │ │ load bal.   │ │ discovery   │                        │
+│ └─────────────┘ └─────────────┘ └─────────────┘                        │
+│                                                                         │
+│ Network Layer:                                                          │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────────────┐    │
+│ │ Calico CNI  │ │ Tigera      │ │     Ingress Controller          │    │
+│ │ Pod Network │ │ Operator    │ │     (nginx-ingress)             │    │
+│ │192.168.0.0/ │ │ CNI mgmt    │ │     NodePort :31748/:31059      │    │
+│ │16 pod CIDR  │ │             │ │     external routing            │    │
+│ └─────────────┘ └─────────────┘ └─────────────────────────────────┘    │
+│                                                                         │
+│ Application Layer:                       Storage Layer:                 │
+│ ┌─────────────────────────────────┐     ┌─────────────────────────────┐ │
+│ │        Services & Pods          │     │      Persistent Storage     │ │
+│ │                                 │     │                             │ │
+│ │ • postgresql (StatefulSet)      │────►│ • postgresql-data (20Gi)    │ │
+│ │   shared database               │     │   database files            │ │
+│ │ • gitea (Deployment)            │────►│ • gitea-data (512Mi)        │ │
+│ │   git hosting                   │     │   git repositories          │ │
+│ │ • umami (Deployment)            │────►│ • memos-data (512Mi)        │ │
+│ │   web analytics                 │     │   notes & content           │ │
+│ │ • memos (Deployment)            │────►│ • filestash-data (512Mi)    │ │
+│ │   note-taking                   │     │   file storage              │ │
+│ │ • filestash (Deployment)        │────►│ • filestash-config (512Mi)  │ │
+│ │   file management               │     │   app configuration         │ │
+│ │ • uptime-kuma (Deployment)      │────►│ • uptime-kuma-data (512Mi)  │ │
+│ │   uptime monitoring             │     │   monitoring data           │ │
+│ │ • static-sites (Deployments)    │────►│ • hostPath volumes          │ │
+│ │   static websites               │     │   /root/containers/         │ │
+│ └─────────────────────────────────┘     └─────────────────────────────┘ │
+│                                                                         │
+│ Configuration:                                                          │
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │ • Secrets: app-secrets (DB creds, API keys)                        │ │
+│ │ • ConfigMaps: postgres init, nginx config                          │ │
+│ │ • Namespace: base-infrastructure (isolation)                       │ │
+│ │ • StorageClass: local-storage (hostPath)                           │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
-**Request Flow:**
-1. External HTTP/HTTPS → Ingress Controller (nginx-ingress)
-2. Ingress routes by hostname → Kubernetes Service (ClusterIP)
-3. Service load-balances → Pod (via kube-proxy)
-4. kubelet manages → Container (via containerd runtime)
-5. Container connects → PostgreSQL StatefulSet (if needed)
-6. PostgreSQL stores data → PersistentVolume (local storage)
-7. Pod-to-pod networking handled by Calico CNI
+### Request Flow Details
+```
+External Access:
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Internet  │───▶│   Ingress   │───▶│  Kubernetes │───▶│ Application │
+│   Client    │    │ Controller  │    │   Service   │    │    Pod      │
+│ (Browser)   │    │(nginx:31748)│    │ (ClusterIP) │    │ (Container) │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+HTTPS Request  ──▶ Route by Host  ──▶ Load Balance  ──▶ Process Request
+git.arcbjorn.com   nginx-ingress      gitea-service     gitea-pod
+
+Internal Communication:
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│ Application │───▶│ Service DNS │───▶│ PostgreSQL  │───▶│ Persistent  │
+│    Pod      │    │ Resolution  │    │   Service   │    │  Volume     │
+│  (umami)    │    │ (CoreDNS)   │    │(StatefulSet)│    │ (Storage)   │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+DB Connection  ──▶ Resolve Name  ──▶ Connect DB    ──▶ Persist Data
+postgresql:5432    ClusterIP          postgresql-0      /root/containers/
+
+Management:
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   kubectl   │───▶│ kube-api    │───▶│   kubelet   │───▶│ containerd  │
+│  (Admin)    │    │   server    │    │ (Node Agent)│    │  (Runtime)  │
+│   Command   │    │   :6443     │    │   :10250    │    │             │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+API Request    ──▶ Validate &     ──▶ Execute on    ──▶ Manage
+kubectl apply      Store in etcd      Worker Node       Containers
 ```
 
 ## Current Setup
@@ -143,6 +144,21 @@ cd umami && docker-compose up -d
 ## Quick Commands
 
 ### Kubernetes Management
+
+**Deployment Scripts:**
+```bash
+# Make scripts executable
+chmod +x deploy.sh cleanup.sh
+
+# Deploy infrastructure (recommended)
+./deploy.sh
+
+# Complete cleanup and fresh deployment
+./cleanup.sh
+./deploy.sh
+```
+
+**Manual Commands:**
 ```bash
 # Check cluster status
 kubectl get nodes
@@ -154,7 +170,19 @@ kubectl logs -f deployment/gitea -n base-infrastructure
 kubectl logs -f deployment/umami -n base-infrastructure
 
 # Apply configurations
-kubectl apply -f k8s/
+kubectl apply -f k8s/ --recursive
+
+# Or apply each directory individually if needed
+kubectl apply -f k8s/namespace/
+kubectl apply -f k8s/storage/
+kubectl apply -f k8s/postgresql/
+kubectl apply -f k8s/gitea/
+kubectl apply -f k8s/umami/
+kubectl apply -f k8s/memos/
+kubectl apply -f k8s/filestash/
+kubectl apply -f k8s/uptime-kuma/
+kubectl apply -f k8s/static-sites/
+kubectl apply -f k8s/ingress/
 ```
 
 ### Testing Services via Port Forwarding
