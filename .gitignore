@@ -1,0 +1,9 @@
+# Secrets with actual credentials
+secrets-actual.yaml
+
+# macOS
+.DS_Store
+
+# Environment files
+.env
+stack.env
