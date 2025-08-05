@@ -14,7 +14,6 @@ spec:
     - analytics.arcbjorn.com
     - uptime.arcbjorn.com
     - server.arcbjorn.com
-    - logs.arcbjorn.com
     - memos.arcbjorn.com
     - dashboard.arcbjorn.com
     - homepage.arcbjorn.com
@@ -71,17 +70,6 @@ spec:
             port:
               number: 8080
   
-  # Container Logs Viewer
-  - host: logs.arcbjorn.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: dozzle
-            port:
-              number: 8080
   
   # Notes and Memos
   - host: memos.arcbjorn.com

@@ -11,7 +11,6 @@ Self-hosted services infrastructure with Docker Compose and Kubernetes deploymen
 - **Memos** - Note-taking application
 - **Filestash** - File management interface
 - **Uptime Kuma** - Uptime monitoring
-- **Dozzle** - Docker logs viewer
 - **k8s-webui** - Kubernetes web interface
 
 ### Docker Compose Architecture (Legacy)
@@ -27,7 +26,6 @@ External Request → Caddy (Reverse Proxy) → Service Container → PostgreSQL 
                    │ Uptime-Kuma │
                    │ FileBrowser │
                    │ pgAdmin     │
-                   │ Dozzle      │
                    └─────────────┘
 ```
 
@@ -69,9 +67,8 @@ External Request → Ingress → Service → Pod → Container → Database
 │                          │ umami:3000      │     │ memos-pod       │        │
 │  ┌─────────────────┐     │ memos:5230      │     │ filestash-pod   │        │
 │  │   kube-proxy    │     │ filestash:8080  │     │ uptime-pod      │        │
-│  │ (Load Balancer) │     │ uptime:3001     │     │ dozzle-pod      │        │
-│  │                 │     │ dozzle:8080     │     │ dashboard-pod   │        │
-│                          │ dashboard:80    │     │ homepage-pod    │        │
+│  │ (Load Balancer) │     │ uptime:3001     │     │ dashboard-pod   │        │
+│  │                 │     │ dashboard:80    │     │ homepage-pod    │        │
 │                          │ homepage:80     │     │ argmusic-pod    │        │
 │                          │ argmusic:80     │     │ humans-pod      │        │
 │                          │ humans:80       │     │                 │        │
@@ -86,8 +83,8 @@ External Request → Ingress → Service → Pod → Container → Database
 │  │ Container Mgmt  │     │ memos:latest    │     └─────────────────┘        │
 │  └─────────────────┘     │ filestash:latest│                                │
 │                          │ uptime:latest   │     ┌─────────────────┐        │
-│  ┌─────────────────┐     │ dozzle:latest   │     │ PersistentVols  │        │
-│  │    Calico       │     │ nginx:alpine    │     │                 │        │
+│  ┌─────────────────┐     │ nginx:alpine    │     │ PersistentVols  │        │
+│  │    Calico       │     │                 │     │                 │        │
 │  │  (CNI Plugin)   │     └─────────────────┘     │ postgresql-pvc  │        │
 │  │                 │                             │ gitea-pvc       │        │
 │  │ Pod Network     │     ┌─────────────────┐     │ memos-pvc       │        │
@@ -188,7 +185,6 @@ chmod +x postgresql/create-multiple-postgresql-databases.sh
 │   ├── memos/             # Notes service
 │   ├── filestash/         # File management
 │   ├── uptime-kuma/       # Monitoring service
-│   ├── dozzle/            # Log viewer
 │   ├── k8s-webui/         # Kubernetes web UI
 │   ├── ingress/           # Ingress rules
 │   └── namespace/         # Secrets, ConfigMaps
