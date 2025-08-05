@@ -9,8 +9,13 @@ echo "🚀 Starting Kubernetes infrastructure deployment..."
 
 # Step 1: Create namespace and wait for it to be ready
 echo "📦 Creating namespace..."
-kubectl apply -f k8s/namespace/
+kubectl apply -f k8s/namespace/namespace.yaml
 kubectl wait --for=condition=Active namespace/base-infrastructure --timeout=30s
+
+# Step 1b: Apply secrets and configmaps after namespace is ready
+echo "🔑 Creating secrets and configmaps..."
+kubectl apply -f k8s/namespace/secrets.yaml
+kubectl apply -f k8s/namespace/configmap.yaml
 
 # Step 2: Create storage resources
 echo "💾 Setting up storage..."
