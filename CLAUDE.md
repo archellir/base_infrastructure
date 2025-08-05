@@ -4,78 +4,89 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture Overview
 
-This is a Docker-based infrastructure repository that manages multiple self-hosted services behind a Caddy reverse proxy. The architecture consists of:
+This is a Kubernetes-based infrastructure repository that manages multiple self-hosted services with ingress routing and persistent storage. The architecture consists of:
 
-- **Caddy**: Acts as the reverse proxy and handles SSL/TLS termination for all services
-- **Centralized networking**: All services connect through the `caddy-network` Docker network
-- **Service isolation**: Each service has its own directory with dedicated docker-compose configuration
-- **PostgreSQL**: Shared database infrastructure with support for multiple databases
+- **Kubernetes Cluster**: Single-node cluster managing all services
+- **Ingress Controller**: nginx-ingress handles SSL/TLS termination and routing
+- **Persistent Storage**: Local volumes for stateful services
+- **PostgreSQL**: Shared database StatefulSet with multiple databases
 
 ## Service Structure
 
-Each service directory contains:
-- `docker-compose.yml/yaml` - Service configuration
-- Service-specific volumes mounted to `/containers/` or `/root/containers/` on the host
+Each service directory under `k8s/` contains:
+- `*-deployment.yaml` - Deployment, Service, and PVC manifests
+- Service-specific PersistentVolumes mounted to `/root/containers/` on the host
 
-Key services:
-- **caddy/**: Reverse proxy with Caddyfile configuration mapping domains to services
-- **postgresql/**: Shared PostgreSQL instance with pgAdmin interface
-- **umami/**: Analytics service with dedicated PostgreSQL database
-- **gitea/**: Git hosting service
-- **memos/**: Note-taking application
-- **filebrowser/**: File management interface
-- **uptime-kuma/**: Uptime monitoring
-- **dozzle/**: Docker logs viewer
+Active services:
+- **k8s/postgresql/**: Shared PostgreSQL StatefulSet
+- **k8s/gitea/**: Git hosting service (git.arcbjorn.com)
+- **k8s/umami/**: Analytics platform (analytics.arcbjorn.com)
+- **k8s/memos/**: Note-taking application (memos.arcbjorn.com)
+- **k8s/filestash/**: File management interface (server.arcbjorn.com)
+- **k8s/uptime-kuma/**: Uptime monitoring (uptime.arcbjorn.com)
+- **k8s/static-sites/**: Static website deployments
 
 ## Common Commands
 
-### Starting the Infrastructure
-1. **Start core services first**: `cd caddy && docker compose up -d`
-2. **Start PostgreSQL networks**: `docker network create postgresql-network`
-3. **Start individual services**: Navigate to each service directory and run `docker compose up -d`
+### Kubernetes Operations
+```bash
+# Check cluster status
+kubectl get nodes
+kubectl get pods -n base-infrastructure
+kubectl get services -n base-infrastructure
+
+# Apply all configurations
+kubectl apply -f k8s/
+
+# View service logs
+kubectl logs -f deployment/gitea -n base-infrastructure
+kubectl logs -f deployment/umami -n base-infrastructure
+```
 
 ### Database Operations
 ```bash
-# Make database script executable
-chmod +x postgresql/create-multiple-postgresql-databases.sh
+# Connect to PostgreSQL
+kubectl exec -it postgresql-0 -n base-infrastructure -- psql -U arcbjorn -d postgres
 
 # Backup all databases
-docker exec -t <postgres-container-id> pg_dumpall -c -U <user> > dump_`date +%d-%m-%Y"_"%H_%M_%S`.sql
+kubectl exec -t postgresql-0 -n base-infrastructure -- pg_dumpall -c -U arcbjorn > backup_$(date +%Y%m%d).sql
 
-# Restore databases
-cat <dump_name>.sql | docker exec -i <postgres-container-id> psql -U <user>
+# Create new database user
+kubectl exec -it postgresql-0 -n base-infrastructure -- psql -U arcbjorn -d postgres -c "CREATE USER newuser WITH PASSWORD 'password';"
 ```
 
-### Network Management
-```bash
-# Create required networks
-docker network create caddy-network
-docker network create postgresql-network
-docker network create umami-network
+### Service Management
+```bash  
+# Restart a service
+kubectl rollout restart deployment/gitea -n base-infrastructure
+
+# Scale a service
+kubectl scale deployment gitea --replicas=2 -n base-infrastructure
+
+# Port forward for testing
+kubectl port-forward svc/gitea 4000:3000 -n base-infrastructure
 ```
 
 ## Configuration Dependencies
 
-- Services reference `../stack.env` for environment variables (not tracked in repo)
-- PostgreSQL uses the multiple database creation script at `postgresql/create-multiple-postgresql-databases.sh`
-- Caddy configuration maps domains to service containers in `/caddy/Caddyfile`
-- Static websites are served from `/static/` directory on the host
+- Kubernetes secrets stored in `k8s/namespace/secrets.yaml` (not tracked in repo)
+- PostgreSQL uses ConfigMap for database initialization
+- Ingress controller maps domains to Kubernetes services
+- Static websites served from hostPath volumes at `/root/static/`
 
-## Domain Mapping (Caddyfile)
+## Domain Mapping (Ingress)
 
-- `infra.arcbjorn.com` → Portainer (portainer:9000)
-- `db.arcbjorn.com` → pgAdmin (pgadmin:80)
-- `git.arcbjorn.com` → Gitea (gitea:3000)
-- `analytics.arcbjorn.com` → Umami (umami:3000)
-- `uptime.arcbjorn.com` → Uptime Kuma (uptime-kuma:3001)
-- `server.arcbjorn.com` → FileBrowser (filebrowser:8080)
-- `logs.arcbjorn.com` → Dozzle (dozzle:8080)
-- `memos.arcbjorn.com` → Memos (memos:5230)
-- Static sites: `dashboard.arcbjorn.com`, `homepage.arcbjorn.com`
+- `git.arcbjorn.com` → Gitea service (gitea:3000)
+- `analytics.arcbjorn.com` → Umami service (umami:3000)
+- `memos.arcbjorn.com` → Memos service (memos:5230)
+- `server.arcbjorn.com` → Filestash service (filestash:8080)
+- `uptime.arcbjorn.com` → Uptime Kuma service (uptime-kuma:3001)
+- Static sites: `dashboard.arcbjorn.com`, `homepage.arcbjorn.com`, `argentinamusic.space`, `humansconnect.ai`
 
 ## Development Notes
 
-- Database connections use container names as hostnames: `postgres://username:password@container_name:port/db_name`
-- pgAdmin requires proper permissions: `sudo chown -R 5050:5050 <host_directory>`
-- Services depend on external Docker networks being created before startup
-- Some services (like Umami) run their own dedicated PostgreSQL instances
+- Database connections use Kubernetes service names: `postgresql://username:password@postgresql:5432/db_name`
+- PersistentVolumes require proper host directory permissions: `chown -R 1000:1000 /root/containers/`
+- Services communicate via Kubernetes DNS: `service-name.namespace.svc.cluster.local`
+- All services use the shared PostgreSQL StatefulSet with multiple databases
+- Storage is limited to 512Mi per service (expandable by updating PV specs)
