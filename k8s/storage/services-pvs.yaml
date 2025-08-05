@@ -65,7 +65,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: local-storage
   local:
-    path: /root/containers/filestash-data-k8s
+    path: /root/containers/filestash-k8s/data
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -91,7 +91,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: local-storage
   local:
-    path: /root/containers/filestash-config-k8s
+    path: /root/containers/filestash-k8s/config
   nodeAffinity:
     required:
       nodeSelectorTerms:
