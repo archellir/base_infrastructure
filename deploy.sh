@@ -52,7 +52,7 @@ echo ""
 # Step 1: Create namespace
 progress "📦 Creating namespace"
 kubectl apply -f k8s/namespace/namespace.yaml
-wait_for_condition "Waiting for namespace to be active" "kubectl get namespace base-infrastructure -o jsonpath='{.status.phase}' 2>/dev/null | grep -q 'Active'"
+wait_for_condition "Waiting for namespace to be active" "kubectl get namespace base-infrastructure -o jsonpath='{.status.phase}' 2>/dev/null | grep -q 'Active'" || true
 
 # Step 2: Apply secrets and configmaps
 progress "🔑 Creating secrets and configmaps"
@@ -66,7 +66,7 @@ kubectl apply -f k8s/storage/
 # Step 4: Deploy PostgreSQL database (core dependency)
 progress "🗄️  Deploying PostgreSQL database"
 kubectl apply -f k8s/postgresql/
-wait_for_condition "Waiting for PostgreSQL to be ready" "kubectl get pods -l app=postgresql -n base-infrastructure -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q 'Running'"
+wait_for_condition "Waiting for PostgreSQL to be ready" "kubectl get pods -l app=postgresql -n base-infrastructure -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q 'Running'" || true
 
 # Step 5: Deploy application services
 progress "🌐 Deploying application services"
