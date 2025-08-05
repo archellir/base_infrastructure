@@ -68,9 +68,13 @@ External Request → Ingress → Service → Pod → Container → Database
 │  └─────────────────┘     │ gitea:3000      │     │ umami-pod       │        │
 │                          │ umami:3000      │     │ memos-pod       │        │
 │  ┌─────────────────┐     │ memos:5230      │     │ filestash-pod   │        │
-│  │   kube-proxy    │     │ filebrowser:8080│     │ uptime-pod      │        │
+│  │   kube-proxy    │     │ filestash:8080  │     │ uptime-pod      │        │
 │  │ (Load Balancer) │     │ uptime:3001     │     │ dozzle-pod      │        │
-│  │                 │     │ dozzle:8080     │     │ k8s-webui-pod   │        │
+│  │                 │     │ dozzle:8080     │     │ dashboard-pod   │        │
+│                          │ dashboard:80    │     │ homepage-pod    │        │
+│                          │ homepage:80     │     │ argmusic-pod    │        │
+│                          │ argmusic:80     │     │ humans-pod      │        │
+│                          │ humans:80       │     │                 │        │
 │  └─────────────────┘     └─────────────────┘     └─────────┬───────┘        │
 │                                                            │                │
 │                                                            ▼                │
@@ -83,7 +87,7 @@ External Request → Ingress → Service → Pod → Container → Database
 │  └─────────────────┘     │ filestash:latest│                                │
 │                          │ uptime:latest   │     ┌─────────────────┐        │
 │  ┌─────────────────┐     │ dozzle:latest   │     │ PersistentVols  │        │
-│  │    Calico       │     │ k8s-webui:latest│     │                 │        │
+│  │    Calico       │     │ nginx:alpine    │     │                 │        │
 │  │  (CNI Plugin)   │     └─────────────────┘     │ postgresql-pvc  │        │
 │  │                 │                             │ gitea-pvc       │        │
 │  │ Pod Network     │     ┌─────────────────┐     │ memos-pvc       │        │
