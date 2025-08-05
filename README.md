@@ -1,37 +1,42 @@
 # Base Infrastructure
 
-Self-hosted services infrastructure with Docker Compose and Kubernetes deployment options.
+Self-hosted services infrastructure deployed on Kubernetes with persistent storage and ingress routing.
+
+## Services
+
+- **PostgreSQL** - Shared database with multiple database support
+- **Gitea** - Git hosting service (git.arcbjorn.com)
+- **Umami** - Analytics platform (analytics.arcbjorn.com)
+- **Memos** - Note-taking application (memos.arcbjorn.com)
+- **Filestash** - File management interface (server.arcbjorn.com)
+- **Uptime Kuma** - Uptime monitoring (uptime.arcbjorn.com)
 
 ## Architecture
 
-### Services
-- **PostgreSQL** - Shared database with multiple database support
-- **Gitea** - Git hosting service
-- **Umami** - Analytics platform  
-- **Memos** - Note-taking application
-- **Filestash** - File management interface
-- **Uptime Kuma** - Uptime monitoring
-- **k8s-webui** - Kubernetes web interface
+### Kubernetes Architecture
 
-### Docker Compose Architecture (Legacy)
+**Data Flow:**
 ```
-External Request → Caddy (Reverse Proxy) → Service Container → PostgreSQL Database
+External Request → Ingress Controller → Service → Pod → Container
 
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│    Caddy    │    │  Services   │    │ PostgreSQL  │
-│   (Proxy)   │◄───┤             ├───►│ (Database)  │
-│    :80/:443 │    │ Gitea       │    │    :5432    │
-└─────────────┘    │ Umami       │    └─────────────┘
-                   │ Memos       │
-                   │ Uptime-Kuma │
-                   │ FileBrowser │
-                   │ pgAdmin     │
-                   └─────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                     Kubernetes Cluster                      │
+│                                                             │
+│  Internet → Ingress → Services → Pods → Containers         │
+│                                                             │
+│  Services:                    Storage:                      │
+│  • gitea (git.arcbjorn.com)   • PostgreSQL (StatefulSet)   │
+│  • umami (analytics.*)        • PersistentVolumes          │
+│  • memos (memos.*)           • Local storage (/root/...)   │
+│  • filestash (server.*)                                    │
+│  • uptime-kuma (uptime.*)     Database:                    │
+│  • static sites              • Shared PostgreSQL          │
+│                               • Multiple databases         │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Kubernetes Architecture (Current)
+**Detailed Architecture:**
 ```
-External Request → Ingress → Service → Pod → Container → Database
 
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                    Kubernetes Control Plane                                  │
@@ -60,59 +65,55 @@ External Request → Ingress → Service → Pod → Container → Database
 │         │                                                                    │
 │         ▼                                                                    │
 │  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐        │
-│  │  nginx-ingress  │     │   K8s Services  │     │      Pods       │        │
+│  │ Ingress-nginx   │     │   K8s Services  │     │      Pods       │        │
 │  │  (Controller)   │────►│   (ClusterIP)   │────►│                 │        │
-│  │   Port 80/443   │     │                 │     │ gitea-pod       │        │
-│  └─────────────────┘     │ gitea:3000      │     │ umami-pod       │        │
-│                          │ umami:3000      │     │ memos-pod       │        │
-│  ┌─────────────────┐     │ memos:5230      │     │ filestash-pod   │        │
-│  │   kube-proxy    │     │ filestash:8080  │     │ uptime-pod      │        │
-│  │ (Load Balancer) │     │ uptime:3001     │     │ dashboard-pod   │        │
-│  │                 │     │ dashboard:80    │     │ homepage-pod    │        │
-│                          │ homepage:80     │     │ argmusic-pod    │        │
-│                          │ argmusic:80     │     │ humans-pod      │        │
-│                          │ humans:80       │     │                 │        │
+│  │   Port 80/443   │     │                 │     │ gitea           │        │
+│  └─────────────────┘     │ gitea:3000      │     │ umami           │        │
+│                          │ umami:3000      │     │ memos           │        │
+│  ┌─────────────────┐     │ memos:5230      │     │ filestash       │        │
+│  │   kube-proxy    │     │ filestash:8080  │     │ uptime-kuma     │        │
+│  │ (Load Balancer) │     │ uptime-kuma:3001│     │ postgresql      │        │
+│  │                 │     │ postgresql:5432 │     │ static-sites    │        │
+│                          │ static-sites:80 │     │                 │        │
 │  └─────────────────┘     └─────────────────┘     └─────────┬───────┘        │
 │                                                            │                │
 │                                                            ▼                │
 │  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐        │
 │  │   containerd    │     │  Containers     │     │ PostgreSQL      │        │
 │  │ (Runtime + CRI) │────►│                 │────►│ (StatefulSet)   │        │
-│  │                 │     │ gitea:latest    │     │                 │        │
-│  │ Image Storage   │     │ umami:latest    │     │ Port 5432       │        │
-│  │ Container Mgmt  │     │ memos:latest    │     └─────────────────┘        │
-│  └─────────────────┘     │ filestash:latest│                                │
-│                          │ uptime:latest   │     ┌─────────────────┐        │
+│  │                 │     │ gitea/gitea     │     │                 │        │
+│  │ Image Storage   │     │ umami-software  │     │ Port 5432       │        │
+│  │ Container Mgmt  │     │ neosmemo/memos  │     └─────────────────┘        │
+│  └─────────────────┘     │ machines/files* │                                │
+│                          │ louislam/uptime │     ┌─────────────────┐        │
 │  ┌─────────────────┐     │ nginx:alpine    │     │ PersistentVols  │        │
 │  │    Calico       │     │                 │     │                 │        │
-│  │  (CNI Plugin)   │     └─────────────────┘     │ postgresql-pvc  │        │
-│  │                 │                             │ gitea-pvc       │        │
-│  │ Pod Network     │     ┌─────────────────┐     │ memos-pvc       │        │
-│  │ 192.168.0.0/16  │     │   Secrets       │     │ filestash-pvc   │        │
-│  └─────────────────┘     │                 │     │ uptime-pvc      │        │
-│                          │ DB passwords    │     └─────────────────┘        │
-│                          │ API keys        │                                │
-│                          │ Certificates    │     ┌─────────────────┐        │
-│                          └─────────────────┘     │  Host Storage   │        │
-│                                                  │                 │        │
-│                          ┌─────────────────┐     │ /root/containers│        │
-│                          │   ConfigMaps    │     │ (Volume Mounts) │        │
-│                          │                 │     └─────────────────┘        │
-│                          │ Init scripts    │                                │
-│                          │ Configuration   │                                │
-│                          │ Environment     │                                │
+│  │  (CNI Plugin)   │     └─────────────────┘     │ postgresql-data │        │
+│  │                 │                             │ gitea-data      │        │
+│  │ Pod Network     │     ┌─────────────────┐     │ memos-data      │        │
+│  │ 192.168.0.0/16  │     │   Secrets       │     │ filestash-data  │        │
+│  └─────────────────┘     │                 │     │ filestash-config│        │
+│                          │ app-secrets     │     │ uptime-kuma-data│        │
+│                          │ DB credentials  │     └─────────────────┘        │
+│                          │ Service config  │                                │
+│                          └─────────────────┘     ┌─────────────────┐        │
+│                                                  │  Host Storage   │        │
+│                          ┌─────────────────┐     │                 │        │
+│                          │   ConfigMaps    │     │ /root/containers│        │
+│                          │                 │     │ (Local volumes) │        │
+│                          │ postgresql-init │     └─────────────────┘        │
+│                          │ static-nginx    │                                │
 │                          └─────────────────┘                                │
 └──────────────────────────────────────────────────────────────────────────────┘
 
-Data Flow Sequence:
-1. External HTTP/HTTPS → nginx-ingress (Port 80/443)
-2. Ingress routes by hostname → K8s Service (ClusterIP via kube-proxy)
-3. Service load-balances → Pod (Scheduled by kube-scheduler)
+**Request Flow:**
+1. External HTTP/HTTPS → Ingress Controller (nginx-ingress)
+2. Ingress routes by hostname → Kubernetes Service (ClusterIP)
+3. Service load-balances → Pod (via kube-proxy)
 4. kubelet manages → Container (via containerd runtime)
-5. Container connects → PostgreSQL StatefulSet (Database)
-6. PostgreSQL stores data → PersistentVolume (Host storage)
-7. All communication secured by API Server and managed by Controller Manager
-8. Pod-to-pod networking handled by Calico CNI (192.168.0.0/16)
+5. Container connects → PostgreSQL StatefulSet (if needed)
+6. PostgreSQL stores data → PersistentVolume (local storage)
+7. Pod-to-pod networking handled by Calico CNI
 ```
 
 ## Current Setup
@@ -136,14 +137,8 @@ cd umami && docker-compose up -d
 - **Node Components**: kubelet, kube-proxy, containerd
 - **Network**: Calico CNI (192.168.0.0/16)
 - **Ingress**: nginx-ingress controller
-- **Storage**: PersistentVolumes for stateful services
-- **Management**: kubectl CLI, kubeadm for cluster management
-
-## Migration Status
-
-✅ **Kubernetes cluster ready**  
-🔄 **Migration in progress** - Use `./migration-commands.sh` for step-by-step migration  
-📋 **Documentation**: See `k8s-setup.md` and `migration-guide.md`
+- **Storage**: Local PersistentVolumes (512Mi per service)
+- **Database**: PostgreSQL StatefulSet with shared databases
 
 ## Quick Commands
 
@@ -151,11 +146,15 @@ cd umami && docker-compose up -d
 ```bash
 # Check cluster status
 kubectl get nodes
-kubectl get pods --all-namespaces
+kubectl get pods -n base-infrastructure
+kubectl get services -n base-infrastructure
 
-# Migration script
-./migration-commands.sh help
-./migration-commands.sh phase0  # Start with backup
+# View logs
+kubectl logs -f deployment/gitea -n base-infrastructure
+kubectl logs -f deployment/umami -n base-infrastructure
+
+# Apply configurations
+kubectl apply -f k8s/
 ```
 
 ### Testing Services via Port Forwarding
@@ -220,31 +219,37 @@ chmod +x postgresql/create-multiple-postgresql-databases.sh
 ```
 ├── k8s/                    # Kubernetes manifests
 │   ├── postgresql/         # Database StatefulSet
-│   ├── gitea/             # Git service  
-│   ├── umami/             # Analytics service
-│   ├── memos/             # Notes service
+│   ├── gitea/             # Git hosting service  
+│   ├── umami/             # Analytics platform
+│   ├── memos/             # Note-taking app
 │   ├── filestash/         # File management
-│   ├── uptime-kuma/       # Monitoring service
-│   ├── k8s-webui/         # Kubernetes web UI
-│   ├── ingress/           # Ingress rules
-│   └── namespace/         # Secrets, ConfigMaps
-├── caddy/                  # Reverse proxy (Docker)
-├── postgresql/             # Database (Docker)
-├── migration-commands.sh   # Migration automation
-├── migration-guide.md     # Detailed migration steps
+│   ├── uptime-kuma/       # Uptime monitoring
+│   ├── static-sites/      # Static website deployments
+│   ├── storage/           # PersistentVolumes
+│   ├── ingress/           # Ingress controller rules
+│   └── namespace/         # Secrets, ConfigMaps, Namespace
+├── caddy/                  # Reverse proxy (Docker legacy)
+├── postgresql/             # Database setup (Docker legacy)
 └── k8s-setup.md           # Kubernetes installation guide
 ```
 
-## Connection Examples
+## Service Access
+
+**External Access (via Ingress):**
+- Gitea: https://git.arcbjorn.com
+- Umami: https://analytics.arcbjorn.com  
+- Memos: https://memos.arcbjorn.com
+- Filestash: https://server.arcbjorn.com
+- Uptime Kuma: https://uptime.arcbjorn.com
+
+**Internal Communication:**
 ```bash
-# Database connection format
-postgres://username:password@container_name:port/db_name
-
-# Internal service communication (Docker)
-http://service_name:port
-
 # Kubernetes service communication
 http://service-name.namespace.svc.cluster.local:port
+# Example: http://postgresql.base-infrastructure.svc.cluster.local:5432
+
+# Database connections (from within cluster)
+postgresql://username:password@postgresql:5432/database_name
 ```
 
 ---
