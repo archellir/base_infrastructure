@@ -90,3 +90,14 @@ kubectl port-forward svc/gitea 4000:3000 -n base-infrastructure
 - Services communicate via Kubernetes DNS: `service-name.namespace.svc.cluster.local`
 - All services use the shared PostgreSQL StatefulSet with multiple databases
 - Storage is limited to 512Mi per service (expandable by updating PV specs)
+
+## Git Commit Guidelines
+
+- Use conventional commits format: `type(scope): description`
+- Keep commit messages clean and focused on code changes only
+- NEVER add co-authors, "Generated with" tags, or other metadata
+- Use separate commits for different file types/purposes:
+  - Scripts/automation: `feat:` or `fix:`
+  - Documentation: `docs:`
+  - Configuration: `fix:` or `refactor:`
+- Focus on what changed and why, not who or how it was generated
