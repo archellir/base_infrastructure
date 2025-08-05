@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: humansconnect-static
+  namespace: base-infrastructure
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: humansconnect-static
+  template:
+    metadata:
+      labels:
+        app: humansconnect-static
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: static-content
+          mountPath: /usr/share/nginx/html
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Mi"
+            cpu: "50m"
+      volumes:
+      - name: static-content
+        hostPath:
+          path: /root/static/humansconnect.ai
+          type: Directory
+      - name: nginx-config
+        configMap:
+          name: static-nginx-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: humansconnect-static
+  namespace: base-infrastructure
+spec:
+  selector:
+    app: humansconnect-static
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP

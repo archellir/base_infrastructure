@@ -16,7 +16,10 @@ spec:
     - server.arcbjorn.com
     - logs.arcbjorn.com
     - memos.arcbjorn.com
-    - k8s.arcbjorn.com
+    - dashboard.arcbjorn.com
+    - homepage.arcbjorn.com
+    - argentinamusic.space
+    - humansconnect.ai
     secretName: arcbjorn-tls
   rules:
   
@@ -64,7 +67,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: filebrowser
+            name: filestash
             port:
               number: 8080
   
@@ -91,3 +94,48 @@ spec:
             name: memos
             port:
               number: 5230
+
+  # Static Sites
+  - host: dashboard.arcbjorn.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: dashboard-static
+            port:
+              number: 80
+
+  - host: homepage.arcbjorn.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: homepage-static
+            port:
+              number: 80
+
+  - host: argentinamusic.space
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: argentinamusic-static
+            port:
+              number: 80
+
+  - host: humansconnect.ai
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: humansconnect-static
+            port:
+              number: 80

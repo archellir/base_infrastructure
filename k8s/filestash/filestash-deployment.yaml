@@ -83,7 +83,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: filebrowser
+  name: filestash
   namespace: base-infrastructure
 spec:
   selector:
