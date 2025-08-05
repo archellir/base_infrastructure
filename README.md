@@ -158,6 +158,46 @@ kubectl get pods --all-namespaces
 ./migration-commands.sh phase0  # Start with backup
 ```
 
+### Testing Services via Port Forwarding
+
+After deploying services to Kubernetes, you can test them locally using port forwarding and SSH tunneling.
+
+#### On the Server
+
+Start Kubernetes port forwards (avoid ports 3000/3001 if Docker is still running):
+```bash
+kubectl port-forward svc/gitea 4000:3000 -n base-infrastructure &
+kubectl port-forward svc/umami 4001:3000 -n base-infrastructure &
+kubectl port-forward svc/memos 5230:5230 -n base-infrastructure &
+kubectl port-forward svc/filestash 8080:8080 -n base-infrastructure &
+kubectl port-forward svc/uptime-kuma 4002:3001 -n base-infrastructure &
+```
+
+#### From Your Local Machine
+
+Create SSH tunnel to forward ports:
+```bash
+# Single command with multiple ports
+ssh -L 4000:localhost:4000 -L 4001:localhost:4001 -L 5230:localhost:5230 -L 8080:localhost:8080 -L 4002:localhost:4002 root@your-server-ip
+```
+
+#### Access Services Locally
+
+- **Gitea**: http://localhost:4000
+- **Umami**: http://localhost:4001  
+- **Memos**: http://localhost:5230
+- **Filestash**: http://localhost:8080
+- **Uptime Kuma**: http://localhost:4002
+
+#### Cleanup After Testing
+
+Stop port forwards on server:
+```bash
+pkill -f "kubectl port-forward"
+```
+
+Exit SSH tunnel: `Ctrl+C` or `exit` in terminal
+
 ### Database Operations
 ```bash
 # Backup all databases
