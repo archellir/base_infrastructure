@@ -18,18 +18,30 @@ progress() {
 
 wait_for_condition() {
     echo "⏳ $1"
-    local timeout=60
+    local timeout=300  # 5 minutes
     local count=0
     while [ $count -lt $timeout ]; do
         if eval "$2"; then
+            echo ""
             echo "✅ Ready!"
             return 0
         fi
-        printf "."
+        # Progress indicator with time
+        local minutes=$((count / 60))
+        local seconds=$((count % 60))
+        printf "\r⏳ Waiting... ${minutes}m ${seconds}s "
+        
+        # SSH keepalive - send a simple command every 30 seconds
+        if [ $((count % 30)) -eq 0 ] && [ $count -gt 0 ]; then
+            kubectl get nodes --no-headers >/dev/null 2>&1
+            printf "[keepalive]"
+        fi
+        
         sleep 1
         count=$((count + 1))
     done
-    echo "⚠️  Timeout waiting for condition, continuing..."
+    echo ""
+    echo "⚠️  Timeout after ${timeout} seconds, continuing anyway..."
     return 1
 }
 
