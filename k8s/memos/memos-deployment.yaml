@@ -69,7 +69,11 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 10Gi
+      storage: 512Mi
+  selector:
+    matchLabels:
+      app: memos
+      volume: data
 
 ---
 apiVersion: v1

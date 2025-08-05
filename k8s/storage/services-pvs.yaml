@@ -2,9 +2,12 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: gitea-pv
+  labels:
+    app: gitea
+    volume: data
 spec:
   capacity:
-    storage: 10Gi
+    storage: 512Mi
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
@@ -25,9 +28,12 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: memos-pv
+  labels:
+    app: memos
+    volume: data
 spec:
   capacity:
-    storage: 5Gi
+    storage: 512Mi
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
@@ -48,9 +54,12 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: filestash-data-pv
+  labels:
+    app: filestash
+    volume: data
 spec:
   capacity:
-    storage: 10Gi
+    storage: 512Mi
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
@@ -71,9 +80,12 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: filestash-config-pv
+  labels:
+    app: filestash
+    volume: config
 spec:
   capacity:
-    storage: 1Gi
+    storage: 512Mi
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
@@ -94,9 +106,12 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: uptime-kuma-pv
+  labels:
+    app: uptime-kuma
+    volume: data
 spec:
   capacity:
-    storage: 5Gi
+    storage: 512Mi
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain

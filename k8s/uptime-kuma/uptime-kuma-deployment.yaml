@@ -56,7 +56,11 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 5Gi
+      storage: 512Mi
+  selector:
+    matchLabels:
+      app: uptime-kuma
+      volume: data
 
 ---
 apiVersion: v1

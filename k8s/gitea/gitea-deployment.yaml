@@ -104,7 +104,11 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 50Gi
+      storage: 512Mi
+  selector:
+    matchLabels:
+      app: gitea
+      volume: data
 
 ---
 apiVersion: v1
