@@ -28,17 +28,14 @@ kubectl delete pv --all --ignore-not-found=true
 echo "⏳ Waiting for namespace cleanup..."
 kubectl wait --for=delete namespace/base-infrastructure --timeout=60s 2>/dev/null || true
 
-# Step 2: Clean up persistent storage directories (remove all data)
+# Step 2: Clean up persistent storage directories (force complete removal)
 echo "💾 Cleaning up persistent storage..."
-rm -rf /root/containers/postgresql-k8s-data/*
-rm -rf /root/containers/postgresql-k8s-data/.*  2>/dev/null || true
-rm -rf /root/containers/gitea-k8s-data/*
-rm -rf /root/containers/gitea-k8s-data/.*  2>/dev/null || true
-rm -rf /root/containers/memos-k8s-data/*
-rm -rf /root/containers/memos-k8s-data/.*  2>/dev/null || true
-rm -rf /root/containers/filestash-k8s/*
-rm -rf /root/containers/uptime-kuma-k8s-data/*
-rm -rf /root/containers/uptime-kuma-k8s-data/.*  2>/dev/null || true
+# Force complete removal of all container data directories to trigger fresh initialization
+rm -rf /root/containers/postgresql-k8s-data
+rm -rf /root/containers/gitea-k8s-data
+rm -rf /root/containers/memos-k8s-data
+rm -rf /root/containers/filestash-k8s
+rm -rf /root/containers/uptime-kuma-k8s-data
 
 # Step 3: Recreate fresh directories with proper ownership
 echo "📁 Creating fresh storage directories..."

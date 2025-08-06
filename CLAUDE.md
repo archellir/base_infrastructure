@@ -101,3 +101,11 @@ kubectl port-forward svc/gitea 4000:3000 -n base-infrastructure
   - Documentation: `docs:`
   - Configuration: `fix:` or `refactor:`
 - Focus on what changed and why, not who or how it was generated
+
+## Important Automation Rules
+
+- **NEVER perform manual database operations or fixes**
+- **ALWAYS fix the automation scripts instead of manual intervention**
+- If database initialization fails, fix the cleanup script to properly remove all data directories
+- Database issues must be resolved by fixing scripts, not by manual database commands
+- #memoize principle: Always improve automation rather than doing manual work
