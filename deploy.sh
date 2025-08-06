@@ -5,6 +5,22 @@
 
 set -e
 
+# Start background keepalive to prevent SSH timeout
+keepalive_job() {
+    while true; do
+        sleep 30
+        kubectl get nodes --no-headers >/dev/null 2>&1 || true
+    done
+} 
+keepalive_job &
+KEEPALIVE_PID=$!
+
+# Cleanup function to kill keepalive on exit
+cleanup() {
+    kill $KEEPALIVE_PID 2>/dev/null || true
+}
+trap cleanup EXIT
+
 # Progress tracking
 TOTAL_STEPS=8
 CURRENT_STEP=0
