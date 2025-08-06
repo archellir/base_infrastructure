@@ -28,13 +28,17 @@ kubectl delete pv --all --ignore-not-found=true
 echo "⏳ Waiting for namespace cleanup..."
 kubectl wait --for=delete namespace/base-infrastructure --timeout=60s 2>/dev/null || true
 
-# Step 2: Clean up persistent storage directories
+# Step 2: Clean up persistent storage directories (remove all data)
 echo "💾 Cleaning up persistent storage..."
-rm -rf /root/containers/postgresql-k8s-data
-rm -rf /root/containers/gitea-k8s-data  
-rm -rf /root/containers/memos-k8s-data
-rm -rf /root/containers/filestash-k8s
-rm -rf /root/containers/uptime-kuma-k8s-data
+rm -rf /root/containers/postgresql-k8s-data/*
+rm -rf /root/containers/postgresql-k8s-data/.*  2>/dev/null || true
+rm -rf /root/containers/gitea-k8s-data/*
+rm -rf /root/containers/gitea-k8s-data/.*  2>/dev/null || true
+rm -rf /root/containers/memos-k8s-data/*
+rm -rf /root/containers/memos-k8s-data/.*  2>/dev/null || true
+rm -rf /root/containers/filestash-k8s/*
+rm -rf /root/containers/uptime-kuma-k8s-data/*
+rm -rf /root/containers/uptime-kuma-k8s-data/.*  2>/dev/null || true
 
 # Step 3: Recreate fresh directories with proper ownership
 echo "📁 Creating fresh storage directories..."
@@ -44,6 +48,7 @@ mkdir -p /root/containers/memos-k8s-data
 mkdir -p /root/containers/filestash-k8s/data
 mkdir -p /root/containers/filestash-k8s/config
 mkdir -p /root/containers/uptime-kuma-k8s-data
+echo "  ⚠️  All services will reinitialize with fresh data"
 
 # Set proper ownership for containers  
 chown -R 1000:1000 /root/containers/postgresql-k8s-data
