@@ -16,19 +16,11 @@ data:
     	local password=$(echo $1 | cut -d':' -f3)
     	echo "  Creating user '$user' and database '$database'"
     	psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
-    	    CREATE USER $user;
-    			ALTER USER $user PASSWORD '$password';
-    	    CREATE DATABASE $database;
-    	    GRANT ALL PRIVILEGES ON DATABASE $database TO $user;
+    	    CREATE USER "$user" WITH PASSWORD '$password';
+    	    CREATE DATABASE "$database" OWNER "$user";
+    	    GRANT ALL PRIVILEGES ON DATABASE "$database" TO "$user";
     EOSQL
     }
-
-    # Create main superuser first
-    echo "Creating main user: $POSTGRES_USER"
-    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
-        CREATE USER "$POSTGRES_USER" WITH SUPERUSER;
-        ALTER USER "$POSTGRES_USER" PASSWORD '$POSTGRES_PASSWORD';
-    EOSQL
 
     if [ -n "$POSTGRES_MULTIPLE_DATABASES" ]; then
     	echo "Multiple database creation requested: $POSTGRES_MULTIPLE_DATABASES"
@@ -39,8 +31,8 @@ data:
     	
     	# Grant schema permissions for each database
     	for db in $(echo $POSTGRES_MULTIPLE_DATABASES | tr ',' ' '); do
-    		local database=$(echo $db | cut -d':' -f1)
-    		local user=$(echo $db | cut -d':' -f2)
+    		database=$(echo $db | cut -d':' -f1)
+    		user=$(echo $db | cut -d':' -f2)
     		psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$database" <<-EOSQL
     			GRANT ALL PRIVILEGES ON SCHEMA public TO "$user";
     		EOSQL
