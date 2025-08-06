@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: port-forwarder
+  namespace: base-infrastructure
+  labels:
+    app: port-forwarder
+spec:
+  selector:
+    matchLabels:
+      app: port-forwarder
+  template:
+    metadata:
+      labels:
+        app: port-forwarder
+    spec:
+      hostNetwork: true
+      containers:
+      - name: socat-http
+        image: alpine/socat:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          apk add --no-cache socat
+          exec socat TCP-LISTEN:80,fork,reuseaddr TCP:localhost:31748
+        securityContext:
+          capabilities:
+            add:
+            - NET_BIND_SERVICE
+      - name: socat-https
+        image: alpine/socat:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          apk add --no-cache socat
+          exec socat TCP-LISTEN:443,fork,reuseaddr TCP:localhost:31059
+        securityContext:
+          capabilities:
+            add:
+            - NET_BIND_SERVICE
+      tolerations:
+      - effect: NoSchedule
+        operator: Exists

@@ -4,10 +4,10 @@ metadata:
   name: base-infrastructure-ingress
   namespace: base-infrastructure
   annotations:
-    kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"  # If using cert-manager
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
+  ingressClassName: nginx
   tls:
   - hosts:
     - git.arcbjorn.com

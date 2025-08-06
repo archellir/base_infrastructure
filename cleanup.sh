@@ -23,6 +23,12 @@ fi
 echo "🗑️  Deleting Kubernetes resources..."
 kubectl delete namespace base-infrastructure --ignore-not-found=true
 kubectl delete pv --all --ignore-not-found=true
+kubectl delete daemonset port-forwarder --ignore-not-found=true || true
+
+# Clean up cert-manager resources
+echo "🔐 Cleaning up SSL certificates and cert-manager..."
+kubectl delete clusterissuer letsencrypt-prod --ignore-not-found=true || true
+kubectl delete namespace cert-manager --ignore-not-found=true || true
 
 # Wait for namespace to be fully deleted
 echo "⏳ Waiting for namespace cleanup..."
