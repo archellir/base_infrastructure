@@ -46,13 +46,13 @@ kubectl logs -f deployment/umami -n base-infrastructure
 ### Database Operations
 ```bash
 # Connect to PostgreSQL
-kubectl exec -it postgresql-0 -n base-infrastructure -- psql -U arcbjorn -d postgres
+kubectl exec -it postgresql-0 -n base-infrastructure -- psql -U postgres -d postgres
 
 # Backup all databases
-kubectl exec -t postgresql-0 -n base-infrastructure -- pg_dumpall -c -U arcbjorn > backup_$(date +%Y%m%d).sql
+kubectl exec -t postgresql-0 -n base-infrastructure -- pg_dumpall -c -U postgres > backup_$(date +%Y%m%d).sql
 
 # Create new database user
-kubectl exec -it postgresql-0 -n base-infrastructure -- psql -U arcbjorn -d postgres -c "CREATE USER newuser WITH PASSWORD 'password';"
+kubectl exec -it postgresql-0 -n base-infrastructure -- psql -U postgres -d postgres -c "CREATE USER newuser WITH PASSWORD 'password';"
 ```
 
 ### Service Management
