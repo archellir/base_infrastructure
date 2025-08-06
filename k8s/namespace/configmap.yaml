@@ -23,12 +23,28 @@ data:
     EOSQL
     }
 
+    # Create main superuser first
+    echo "Creating main user: $POSTGRES_USER"
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+        CREATE USER "$POSTGRES_USER" WITH SUPERUSER;
+        ALTER USER "$POSTGRES_USER" PASSWORD '$POSTGRES_PASSWORD';
+    EOSQL
+
     if [ -n "$POSTGRES_MULTIPLE_DATABASES" ]; then
     	echo "Multiple database creation requested: $POSTGRES_MULTIPLE_DATABASES"
     	for db in $(echo $POSTGRES_MULTIPLE_DATABASES | tr ',' ' '); do
     		create_user_and_database $db
     	done
     	echo "Multiple databases created"
+    	
+    	# Grant schema permissions for each database
+    	for db in $(echo $POSTGRES_MULTIPLE_DATABASES | tr ',' ' '); do
+    		local database=$(echo $db | cut -d':' -f1)
+    		local user=$(echo $db | cut -d':' -f2)
+    		psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$database" <<-EOSQL
+    			GRANT ALL PRIVILEGES ON SCHEMA public TO "$user";
+    		EOSQL
+    	done
     fi
 
 ---
