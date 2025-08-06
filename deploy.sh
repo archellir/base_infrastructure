@@ -111,9 +111,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "🔀 Setting up ingress routing with SSL..."
     kubectl apply -f k8s/ingress/
     
-    echo "🔀 Setting up port forwarding (80/443 → NodePort)..."
-    kubectl apply -f k8s/port-forward/
-    wait_for_condition "Waiting for port forwarder to be ready" "kubectl get pods -l app=port-forwarder -n base-infrastructure -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q 'Running'" || true
+    echo "🔀 Setting up Docker-style port forwarding (80/443 → NodePort)..."
+    chmod +x setup-port-forwarding.sh
+    ./setup-port-forwarding.sh
     
     echo "🔐 SSL certificates will be automatically provisioned by Let's Encrypt"
 else

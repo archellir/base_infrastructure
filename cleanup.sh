@@ -23,12 +23,20 @@ fi
 echo "🗑️  Deleting Kubernetes resources..."
 kubectl delete namespace base-infrastructure --ignore-not-found=true
 kubectl delete pv --all --ignore-not-found=true
-kubectl delete daemonset port-forwarder --ignore-not-found=true || true
 
 # Clean up cert-manager resources
 echo "🔐 Cleaning up SSL certificates and cert-manager..."
 kubectl delete clusterissuer letsencrypt-prod --ignore-not-found=true || true
 kubectl delete namespace cert-manager --ignore-not-found=true || true
+
+# Clean up port forwarding rules
+echo "🔀 Cleaning up port forwarding rules..."
+if [ -f remove-port-forwarding.sh ]; then
+    chmod +x remove-port-forwarding.sh
+    ./remove-port-forwarding.sh || echo "⚠️  Some port forwarding rules may not exist"
+else
+    echo "⚠️  remove-port-forwarding.sh not found, skipping iptables cleanup"
+fi
 
 # Wait for namespace to be fully deleted
 echo "⏳ Waiting for namespace cleanup..."
