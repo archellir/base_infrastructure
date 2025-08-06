@@ -27,21 +27,13 @@ spec:
         - name: APPLICATION_URL
           value: "https://server.arcbjorn.com"
         livenessProbe:
-          httpGet:
-            path: /api/session
+          tcpSocket:
             port: 8334
-            httpHeaders:
-            - name: Host
-              value: server.arcbjorn.com
           initialDelaySeconds: 60
           periodSeconds: 30
         readinessProbe:
-          httpGet:
-            path: /api/session
+          tcpSocket:
             port: 8334
-            httpHeaders:
-            - name: Host
-              value: server.arcbjorn.com
           initialDelaySeconds: 30
           periodSeconds: 10
         resources:
