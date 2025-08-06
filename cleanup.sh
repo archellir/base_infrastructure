@@ -30,7 +30,6 @@ kubectl wait --for=delete namespace/base-infrastructure --timeout=60s 2>/dev/nul
 
 # Step 2: Clean up persistent storage directories (force complete removal)
 echo "💾 Cleaning up persistent storage..."
-# Force complete removal of all container data directories to trigger fresh initialization
 rm -rf /root/containers/postgresql-k8s-data
 rm -rf /root/containers/gitea-k8s-data
 rm -rf /root/containers/memos-k8s-data
