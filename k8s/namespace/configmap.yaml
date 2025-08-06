@@ -10,19 +10,26 @@ data:
     set -e
     set -u
 
+    echo "Starting database initialization script"
+    echo "POSTGRES_MULTIPLE_DATABASES: $POSTGRES_MULTIPLE_DATABASES"
+
     function create_user_and_database() {
         local database=$1
         local user=$2
         local password=$3
         echo "  Creating user '$user' and database '$database'"
         psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
-            CREATE USER IF NOT EXISTS $user WITH PASSWORD '$password';
-            CREATE DATABASE IF NOT EXISTS $database;
-            GRANT ALL PRIVILEGES ON DATABASE $database TO $user;
-            -- Grant schema permissions (needed for umami)
-            \c $database;
-            GRANT ALL PRIVILEGES ON SCHEMA public TO $user;
-    EOSQL
+            SELECT 'Creating user and database: $database' as status;
+            CREATE USER "$user" WITH PASSWORD '$password';
+            CREATE DATABASE "$database" OWNER "$user";
+            GRANT ALL PRIVILEGES ON DATABASE "$database" TO "$user";
+EOSQL
+        echo "  Granting schema permissions for $database"
+        psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$database" <<-EOSQL
+            GRANT ALL PRIVILEGES ON SCHEMA public TO "$user";
+            GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO "$user";
+            GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO "$user";
+EOSQL
     }
 
     if [ -n "$POSTGRES_MULTIPLE_DATABASES" ]; then
@@ -35,6 +42,12 @@ data:
             create_user_and_database $database $user $password
         done
         echo "Multiple databases created successfully"
+        
+        # List created databases and users
+        psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -c "\l"
+        psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -c "\du"
+    else
+        echo "No multiple databases configured"
     fi
 
 ---
