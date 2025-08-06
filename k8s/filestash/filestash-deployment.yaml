@@ -30,12 +30,18 @@ spec:
           httpGet:
             path: /api/session
             port: 8334
+            httpHeaders:
+            - name: Host
+              value: server.arcbjorn.com
           initialDelaySeconds: 60
           periodSeconds: 30
         readinessProbe:
           httpGet:
             path: /api/session
             port: 8334
+            httpHeaders:
+            - name: Host
+              value: server.arcbjorn.com
           initialDelaySeconds: 30
           periodSeconds: 10
         resources:
