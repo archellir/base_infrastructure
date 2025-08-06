@@ -32,39 +32,39 @@ Active services:
 ```bash
 # Check cluster status
 kubectl get nodes
-kubectl get pods -n base-infrastructure
-kubectl get services -n base-infrastructure
+kubectl get pods -n base-infra
+kubectl get services -n base-infra
 
 # Apply all configurations
 kubectl apply -f k8s/
 
 # View service logs
-kubectl logs -f deployment/gitea -n base-infrastructure
-kubectl logs -f deployment/umami -n base-infrastructure
+kubectl logs -f deployment/gitea -n base-infra
+kubectl logs -f deployment/umami -n base-infra
 ```
 
 ### Database Operations
 ```bash
 # Connect to PostgreSQL
-kubectl exec -it postgresql-0 -n base-infrastructure -- psql -U postgres -d postgres
+kubectl exec -it postgresql-0 -n base-infra -- psql -U postgres -d postgres
 
 # Backup all databases
-kubectl exec -t postgresql-0 -n base-infrastructure -- pg_dumpall -c -U postgres > backup_$(date +%Y%m%d).sql
+kubectl exec -t postgresql-0 -n base-infra -- pg_dumpall -c -U postgres > backup_$(date +%Y%m%d).sql
 
 # Create new database user
-kubectl exec -it postgresql-0 -n base-infrastructure -- psql -U postgres -d postgres -c "CREATE USER newuser WITH PASSWORD 'password';"
+kubectl exec -it postgresql-0 -n base-infra -- psql -U postgres -d postgres -c "CREATE USER newuser WITH PASSWORD 'password';"
 ```
 
 ### Service Management
 ```bash  
 # Restart a service
-kubectl rollout restart deployment/gitea -n base-infrastructure
+kubectl rollout restart deployment/gitea -n base-infra
 
 # Scale a service
-kubectl scale deployment gitea --replicas=2 -n base-infrastructure
+kubectl scale deployment gitea --replicas=2 -n base-infra
 
 # Port forward for testing
-kubectl port-forward svc/gitea 4000:3000 -n base-infrastructure
+kubectl port-forward svc/gitea 4000:3000 -n base-infra
 ```
 
 ## Configuration Dependencies

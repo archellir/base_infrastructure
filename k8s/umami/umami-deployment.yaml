@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: umami
-  namespace: base-infrastructure
+  namespace: base-infra
 spec:
   replicas: 1
   selector:
@@ -59,7 +59,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: umami
-  namespace: base-infrastructure
+  namespace: base-infra
 spec:
   selector:
     app: umami

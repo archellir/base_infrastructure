@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: postgresql
-  namespace: base-infrastructure
+  namespace: base-infra
 spec:
   serviceName: postgresql-headless
   replicas: 1

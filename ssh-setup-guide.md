@@ -18,19 +18,19 @@ ssh -i ~/.ssh/your-key root@your-server-ip
 ```bash
 # Kubernetes cluster status
 kubectl get nodes
-kubectl get pods -n base-infrastructure
-kubectl get services -n base-infrastructure
+kubectl get pods -n base-infra
+kubectl get services -n base-infra
 
 # Check service logs
-kubectl logs -f deployment/gitea -n base-infrastructure
+kubectl logs -f deployment/gitea -n base-infra
 ```
 
 **Port Forwarding for Testing:**
 ```bash
 # Forward services to test locally
-kubectl port-forward svc/gitea 4000:3000 -n base-infrastructure &
-kubectl port-forward svc/umami 4001:3000 -n base-infrastructure &
-kubectl port-forward svc/memos 5230:5230 -n base-infrastructure &
+kubectl port-forward svc/gitea 4000:3000 -n base-infra &
+kubectl port-forward svc/umami 4001:3000 -n base-infra &
+kubectl port-forward svc/memos 5230:5230 -n base-infra &
 
 # Stop all port forwards
 pkill -f "kubectl port-forward"
@@ -51,7 +51,7 @@ ssh -L 4000:localhost:4000 -L 4001:localhost:4001 -L 5230:localhost:5230 root@yo
 
 ```bash
 # Restart a failing service
-kubectl rollout restart deployment/service-name -n base-infrastructure
+kubectl rollout restart deployment/service-name -n base-infra
 
 # Check disk space
 df -h

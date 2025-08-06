@@ -81,7 +81,7 @@ Internet → Ingress → Services → Pods → Containers
 │ ┌─────────────────────────────────────────────────────────────────────┐ │
 │ │ • Secrets: app-secrets (DB creds, API keys)                        │ │
 │ │ • ConfigMaps: postgres init, nginx config                          │ │
-│ │ • Namespace: base-infrastructure (isolation)                       │ │
+│ │ • Namespace: base-infra (isolation)                       │ │
 │ │ • StorageClass: local-storage (hostPath)                           │ │
 │ └─────────────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -162,12 +162,12 @@ chmod +x deploy.sh cleanup.sh
 ```bash
 # Check cluster status
 kubectl get nodes
-kubectl get pods -n base-infrastructure
-kubectl get services -n base-infrastructure
+kubectl get pods -n base-infra
+kubectl get services -n base-infra
 
 # View logs
-kubectl logs -f deployment/gitea -n base-infrastructure
-kubectl logs -f deployment/umami -n base-infrastructure
+kubectl logs -f deployment/gitea -n base-infra
+kubectl logs -f deployment/umami -n base-infra
 
 # Apply configurations
 kubectl apply -f k8s/ --recursive
@@ -193,11 +193,11 @@ After deploying services to Kubernetes, you can test them locally using port for
 
 Start Kubernetes port forwards (avoid ports 3000/3001 if Docker is still running):
 ```bash
-kubectl port-forward svc/gitea 4000:3000 -n base-infrastructure &
-kubectl port-forward svc/umami 4001:3000 -n base-infrastructure &
-kubectl port-forward svc/memos 5230:5230 -n base-infrastructure &
-kubectl port-forward svc/filestash 8080:8080 -n base-infrastructure &
-kubectl port-forward svc/uptime-kuma 4002:3001 -n base-infrastructure &
+kubectl port-forward svc/gitea 4000:3000 -n base-infra &
+kubectl port-forward svc/umami 4001:3000 -n base-infra &
+kubectl port-forward svc/memos 5230:5230 -n base-infra &
+kubectl port-forward svc/filestash 8080:8080 -n base-infra &
+kubectl port-forward svc/uptime-kuma 4002:3001 -n base-infra &
 ```
 
 #### From Your Local Machine
@@ -274,7 +274,7 @@ chmod +x postgresql/create-multiple-postgresql-databases.sh
 ```bash
 # Kubernetes service communication
 http://service-name.namespace.svc.cluster.local:port
-# Example: http://postgresql.base-infrastructure.svc.cluster.local:5432
+# Example: http://postgresql.base-infra.svc.cluster.local:5432
 
 # Database connections (from within cluster)
 postgresql://username:password@postgresql:5432/database_name

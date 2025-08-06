@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: static-nginx-config
-  namespace: base-infrastructure
+  namespace: base-infra
 data:
   default.conf: |
     server {

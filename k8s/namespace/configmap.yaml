@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: postgresql-init-scripts
-  namespace: base-infrastructure
+  namespace: base-infra
 data:
   create-multiple-postgresql-databases.sh: |
     #!/bin/bash
@@ -44,7 +44,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: app-config
-  namespace: base-infrastructure
+  namespace: base-infra
 data:
   # PostgreSQL Configuration
   POSTGRES_PORT: "5432"

@@ -68,7 +68,7 @@ echo ""
 # Step 1: Create namespace
 progress "📦 Creating namespace"
 kubectl apply -f k8s/namespace/namespace.yaml
-wait_for_condition "Waiting for namespace to be active" "kubectl get namespace base-infrastructure -o jsonpath='{.status.phase}' 2>/dev/null | grep -q 'Active'" || true
+wait_for_condition "Waiting for namespace to be active" "kubectl get namespace base-infra -o jsonpath='{.status.phase}' 2>/dev/null | grep -q 'Active'" || true
 
 # Step 2: Apply secrets and configmaps
 progress "🔑 Creating secrets and configmaps"
@@ -82,7 +82,7 @@ kubectl apply -f k8s/storage/
 # Step 4: Deploy PostgreSQL database (core dependency)
 progress "🗄️  Deploying PostgreSQL database"
 kubectl apply -f k8s/postgresql/
-wait_for_condition "Waiting for PostgreSQL to be ready" "kubectl get pods -l app=postgresql -n base-infrastructure -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q 'Running'" || true
+wait_for_condition "Waiting for PostgreSQL to be ready" "kubectl get pods -l app=postgresql -n base-infra -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q 'Running'" || true
 
 # Step 5: Deploy application services
 progress "🌐 Deploying application services"
@@ -126,18 +126,18 @@ echo ""
 echo "✅ Deployment complete! Checking status..."
 echo ""
 echo "Pods:"
-kubectl get pods -n base-infrastructure
+kubectl get pods -n base-infra
 echo ""
 echo "Services:"
-kubectl get services -n base-infrastructure
+kubectl get services -n base-infra
 echo ""
 echo "PersistentVolumeClaims:"
-kubectl get pvc -n base-infrastructure
+kubectl get pvc -n base-infra
 
 echo ""
 echo "🎉 Infrastructure deployment finished!"
-echo "📊 Use 'kubectl get pods -n base-infrastructure' to monitor pod status"
-echo "🔍 Use 'kubectl logs -f deployment/<service-name> -n base-infrastructure' to view logs"
+echo "📊 Use 'kubectl get pods -n base-infra' to monitor pod status"
+echo "🔍 Use 'kubectl logs -f deployment/<service-name> -n base-infra' to view logs"
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo ""
     echo "To enable ingress routing later:"

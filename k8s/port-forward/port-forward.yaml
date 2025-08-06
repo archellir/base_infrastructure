@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: port-forwarder
-  namespace: base-infrastructure
+  namespace: base-infra
   labels:
     app: port-forwarder
 spec:

@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgresql
-  namespace: base-infrastructure
+  namespace: base-infra
 spec:
   selector:
     app: postgresql
@@ -17,7 +17,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgresql-headless
-  namespace: base-infrastructure
+  namespace: base-infra
 spec:
   selector:
     app: postgresql

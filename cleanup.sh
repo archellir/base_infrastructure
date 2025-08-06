@@ -8,7 +8,7 @@ set -e
 echo "🧹 Starting complete infrastructure cleanup..."
 echo ""
 echo "⚠️  WARNING: This will permanently delete:"
-echo "   - All Kubernetes resources in base-infrastructure namespace"
+echo "   - All Kubernetes resources in base-infra namespace"
 echo "   - All PersistentVolumes and data"
 echo "   - All application data in /root/containers/"
 echo ""
@@ -21,7 +21,7 @@ fi
 
 # Step 1: Delete all Kubernetes resources
 echo "🗑️  Deleting Kubernetes resources..."
-kubectl delete namespace base-infrastructure --ignore-not-found=true
+kubectl delete namespace base-infra --ignore-not-found=true
 kubectl delete pv --all --ignore-not-found=true
 
 # Clean up cert-manager resources
@@ -40,7 +40,7 @@ fi
 
 # Wait for namespace to be fully deleted
 echo "⏳ Waiting for namespace cleanup..."
-kubectl wait --for=delete namespace/base-infrastructure --timeout=60s 2>/dev/null || true
+kubectl wait --for=delete namespace/base-infra --timeout=60s 2>/dev/null || true
 
 # Step 2: Clean up persistent storage directories (force complete removal)
 echo "💾 Cleaning up persistent storage..."
@@ -72,7 +72,7 @@ echo ""
 echo "✅ Cleanup complete! Verification:"
 echo ""
 echo "Kubernetes resources:"
-kubectl get namespace base-infrastructure 2>/dev/null || echo "✓ Namespace deleted"
+kubectl get namespace base-infra 2>/dev/null || echo "✓ Namespace deleted"
 kubectl get pv 2>/dev/null || echo "✓ No PersistentVolumes found"
 echo ""
 echo "Storage directories:"
