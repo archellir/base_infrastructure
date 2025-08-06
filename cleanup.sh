@@ -30,29 +30,27 @@ kubectl wait --for=delete namespace/base-infrastructure --timeout=60s 2>/dev/nul
 
 # Step 2: Clean up persistent storage directories
 echo "💾 Cleaning up persistent storage..."
-rm -rf /root/containers/postgresql-data-k8s
-rm -rf /root/containers/gitea-data-k8s
-rm -rf /root/containers/memos-data-k8s
-rm -rf /root/containers/filestash-data-k8s
-rm -rf /root/containers/filestash-config-k8s
-rm -rf /root/containers/uptime-kuma-data-k8s
+rm -rf /root/containers/postgresql-k8s-data
+rm -rf /root/containers/gitea-k8s-data  
+rm -rf /root/containers/memos-k8s-data
+rm -rf /root/containers/filestash-k8s
+rm -rf /root/containers/uptime-kuma-k8s-data
 
 # Step 3: Recreate fresh directories with proper ownership
 echo "📁 Creating fresh storage directories..."
-mkdir -p /root/containers/postgresql-data-k8s
-mkdir -p /root/containers/gitea-data-k8s
-mkdir -p /root/containers/memos-data-k8s
-mkdir -p /root/containers/filestash-data-k8s
-mkdir -p /root/containers/filestash-config-k8s
-mkdir -p /root/containers/uptime-kuma-data-k8s
+mkdir -p /root/containers/postgresql-k8s-data
+mkdir -p /root/containers/gitea-k8s-data
+mkdir -p /root/containers/memos-k8s-data
+mkdir -p /root/containers/filestash-k8s/data
+mkdir -p /root/containers/filestash-k8s/config
+mkdir -p /root/containers/uptime-kuma-k8s-data
 
-# Set proper ownership for containers
-chown -R 1000:1000 /root/containers/postgresql-data-k8s
-chown -R 1000:1000 /root/containers/gitea-data-k8s
-chown -R 1000:1000 /root/containers/memos-data-k8s
-chown -R 1000:1000 /root/containers/filestash-data-k8s
-chown -R 1000:1000 /root/containers/filestash-config-k8s
-chown -R 1000:1000 /root/containers/uptime-kuma-data-k8s
+# Set proper ownership for containers  
+chown -R 1000:1000 /root/containers/postgresql-k8s-data
+chown -R 1000:1000 /root/containers/gitea-k8s-data
+chown -R 1000:1000 /root/containers/memos-k8s-data
+chown -R 1000:1000 /root/containers/filestash-k8s
+chown -R 1000:1000 /root/containers/uptime-kuma-k8s-data
 
 # Step 4: Verify cleanup
 echo ""
