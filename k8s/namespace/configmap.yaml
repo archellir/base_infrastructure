@@ -12,20 +12,29 @@ data:
 
     function create_user_and_database() {
         local database=$1
-        echo "  Creating user and database '$database'"
+        local user=$2
+        local password=$3
+        echo "  Creating user '$user' and database '$database'"
         psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
-            CREATE USER $database;
-            CREATE DATABASE $database;
-            GRANT ALL PRIVILEGES ON DATABASE $database TO $database;
+            CREATE USER IF NOT EXISTS $user WITH PASSWORD '$password';
+            CREATE DATABASE IF NOT EXISTS $database;
+            GRANT ALL PRIVILEGES ON DATABASE $database TO $user;
+            -- Grant schema permissions (needed for umami)
+            \c $database;
+            GRANT ALL PRIVILEGES ON SCHEMA public TO $user;
     EOSQL
     }
 
     if [ -n "$POSTGRES_MULTIPLE_DATABASES" ]; then
         echo "Multiple database creation requested: $POSTGRES_MULTIPLE_DATABASES"
-        for db in $(echo $POSTGRES_MULTIPLE_DATABASES | tr ',' ' '); do
-            create_user_and_database $db
+        # Format: db:user:password,db:user:password
+        for db_config in $(echo $POSTGRES_MULTIPLE_DATABASES | tr ',' ' '); do
+            database=$(echo $db_config | cut -d':' -f1)
+            user=$(echo $db_config | cut -d':' -f2) 
+            password=$(echo $db_config | cut -d':' -f3)
+            create_user_and_database $database $user $password
         done
-        echo "Multiple databases created"
+        echo "Multiple databases created successfully"
     fi
 
 ---
