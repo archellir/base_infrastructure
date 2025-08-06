@@ -105,6 +105,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.yaml
     wait_for_condition "Waiting for cert-manager to be ready" "kubectl get pods -n cert-manager -l app=cert-manager -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q 'Running'" || true
     
+    echo "🔐 Waiting for cert-manager webhook to be ready..."
+    kubectl wait --for=condition=available --timeout=120s deployment/cert-manager-webhook -n cert-manager
+    
     echo "🔐 Creating Let's Encrypt ClusterIssuer..."
     kubectl apply -f k8s/cert-manager/
     
