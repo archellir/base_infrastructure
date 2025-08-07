@@ -49,30 +49,30 @@ secrets: ## Copy secrets to server only
 
 status: ## Check infrastructure status on server
 	@echo "📊 Checking infrastructure status on $(SERVER)..."
-	@ssh root@$(SERVER) "cd $(REPO_DIR) && kubectl get pods -n base-infra"
+	@ssh root@$(SERVER) "cd $(REPO_DIR) && KUBECONFIG=/etc/kubernetes/admin.conf kubectl get pods -n base-infra"
 
 logs: ## Show logs for a service (specify SERVICE=service-name)
 	@echo "📋 Showing logs for $(SERVICE) on $(SERVER)..."
-	@ssh -t root@$(SERVER) "cd $(REPO_DIR) && kubectl logs -f deployment/$(SERVICE) -n base-infra"
+	@ssh -t root@$(SERVER) "cd $(REPO_DIR) && KUBECONFIG=/etc/kubernetes/admin.conf kubectl logs -f deployment/$(SERVICE) -n base-infra"
 
 update: deploy-prep ## Update specific service configuration (specify SERVICE=service-name)
 	@echo "🔄 Updating $(SERVICE) on $(SERVER)..."
-	@ssh root@$(SERVER) "cd $(REPO_DIR) && kubectl apply -f k8s/$(SERVICE)/ --validate=false"
-	@ssh root@$(SERVER) "kubectl rollout restart deployment/$(SERVICE) -n base-infra"
-	@ssh root@$(SERVER) "kubectl get pods -n base-infra | grep $(SERVICE)"
+	@ssh root@$(SERVER) "cd $(REPO_DIR) && KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f k8s/$(SERVICE)/ --validate=false"
+	@ssh root@$(SERVER) "KUBECONFIG=/etc/kubernetes/admin.conf kubectl rollout restart deployment/$(SERVICE) -n base-infra"
+	@ssh root@$(SERVER) "KUBECONFIG=/etc/kubernetes/admin.conf kubectl get pods -n base-infra | grep $(SERVICE)"
 	@echo "✅ $(SERVICE) updated and restarted"
 
 restart: ## Restart a service (specify SERVICE=service-name)
 	@echo "🔄 Restarting $(SERVICE) on $(SERVER)..."
-	@ssh root@$(SERVER) "kubectl rollout restart deployment/$(SERVICE) -n base-infra"
-	@ssh root@$(SERVER) "kubectl get pods -n base-infra | grep $(SERVICE)"
+	@ssh root@$(SERVER) "KUBECONFIG=/etc/kubernetes/admin.conf kubectl rollout restart deployment/$(SERVICE) -n base-infra"
+	@ssh root@$(SERVER) "KUBECONFIG=/etc/kubernetes/admin.conf kubectl get pods -n base-infra | grep $(SERVICE)"
 	@echo "✅ $(SERVICE) restarted"
 
 apply-all: deploy-prep ## Apply all k8s configurations without full deploy
 	@echo "📦 Applying all configurations on $(SERVER)..."
-	@ssh root@$(SERVER) "cd $(REPO_DIR) && kubectl apply -f k8s/ --validate=false"
+	@ssh root@$(SERVER) "cd $(REPO_DIR) && KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f k8s/ --validate=false"
 	@echo "✅ All configurations applied"
 
 exec: ## Execute command in pod (specify SERVICE=service-name CMD="command")
 	@echo "💻 Executing command in $(SERVICE) pod..."
-	@ssh -t root@$(SERVER) "kubectl exec -it deployment/$(SERVICE) -n base-infra -- $(CMD)"
+	@ssh -t root@$(SERVER) "KUBECONFIG=/etc/kubernetes/admin.conf kubectl exec -it deployment/$(SERVICE) -n base-infra -- $(CMD)"
