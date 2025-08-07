@@ -83,7 +83,7 @@ kubectl port-forward svc/gitea 4000:3000 -n base-infra
 - `git.arcbjorn.com` → Gitea service (gitea:3000)
 - `analytics.arcbjorn.com` → Umami service (umami:3000)
 - `memos.arcbjorn.com` → Memos service (memos:5230)
-- `server.arcbjorn.com` → Filestash service (filestash:8080)
+- `server.arcbjorn.com` → Filestash service (filestash:8334)
 - `uptime.arcbjorn.com` → Uptime Kuma service (uptime-kuma:3001)
 - Static sites: `dashboard.arcbjorn.com`, `homepage.arcbjorn.com`, `argentinamusic.space`, `humansconnect.ai`
 

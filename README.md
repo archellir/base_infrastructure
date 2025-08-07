@@ -53,8 +53,8 @@ Internet → Ingress → Services → Pods → Containers
 │ ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────────────┐    │
 │ │ Calico CNI  │ │ Tigera      │ │     Ingress Controller          │    │
 │ │ Pod Network │ │ Operator    │ │     (nginx-ingress)             │    │
-│ │192.168.0.0/ │ │ CNI mgmt    │ │     NodePort :31748/:31059      │    │
-│ │16 pod CIDR  │ │             │ │     external routing            │    │
+│ │192.168.0.0/ │ │ CNI mgmt    │ │     hostNetwork + iptables      │    │
+│ │16 pod CIDR  │ │             │ │     bypass (ports 80/443)       │    │
 │ └─────────────┘ └─────────────┘ └─────────────────────────────────┘    │
 │                                                                         │
 │ Application Layer:                       Storage Layer:                 │
@@ -87,16 +87,25 @@ Internet → Ingress → Services → Pods → Containers
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+### Network Security Model
+
+**External Access Method:**
+- **UFW Firewall**: Unchanged (only SSH port 22 allowed)
+- **iptables Bypass**: Docker-style rules inserted at position 1 in INPUT chain
+  - `DOCKER-STYLE-HTTP-BYPASS` (port 80) 
+  - `DOCKER-STYLE-HTTPS-BYPASS` (port 443)
+- **No Port Opening**: UFW remains secure, bypass rules handle external traffic
+
 ### Request Flow Details
 ```
-External Access:
+External Access (hostNetwork + iptables bypass):
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   Internet  │───▶│   Ingress   │───▶│  Kubernetes │───▶│ Application │
-│   Client    │    │ Controller  │    │   Service   │    │    Pod      │
-│ (Browser)   │    │(nginx:31748)│    │ (ClusterIP) │    │ (Container) │
+│   Internet  │───▶│   iptables  │───▶│   Ingress   │───▶│ Application │
+│   Client    │    │   bypass    │    │ Controller  │    │    Pod      │
+│ (Browser)   │    │  (80/443)   │    │(hostNetwork)│    │ (Container) │
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-HTTPS Request  ──▶ Route by Host  ──▶ Load Balance  ──▶ Process Request
-git.arcbjorn.com   nginx-ingress      gitea-service     gitea-pod
+HTTPS Request  ──▶ Bypass UFW   ──▶ Route by Host  ──▶ Process Request
+git.arcbjorn.com   Direct Access     nginx-ingress     gitea-service
 
 Internal Communication:
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
@@ -137,7 +146,8 @@ cd umami && docker-compose up -d
 - **Control Plane**: API Server, etcd, Scheduler, Controller Manager
 - **Node Components**: kubelet, kube-proxy, containerd
 - **Network**: Calico CNI (192.168.0.0/16)
-- **Ingress**: nginx-ingress controller
+- **Ingress**: nginx-ingress controller with hostNetwork
+- **SSL/TLS**: Individual Let's Encrypt certificates per domain (not multi-domain)
 - **Storage**: Local PersistentVolumes (512Mi per service)
 - **Database**: PostgreSQL StatefulSet with shared databases
 
@@ -196,7 +206,7 @@ Start Kubernetes port forwards (avoid ports 3000/3001 if Docker is still running
 kubectl port-forward svc/gitea 4000:3000 -n base-infra &
 kubectl port-forward svc/umami 4001:3000 -n base-infra &
 kubectl port-forward svc/memos 5230:5230 -n base-infra &
-kubectl port-forward svc/filestash 8080:8080 -n base-infra &
+kubectl port-forward svc/filestash 8334:8334 -n base-infra &
 kubectl port-forward svc/uptime-kuma 4002:3001 -n base-infra &
 ```
 
@@ -205,7 +215,7 @@ kubectl port-forward svc/uptime-kuma 4002:3001 -n base-infra &
 Create SSH tunnel to forward ports:
 ```bash
 # Single command with multiple ports
-ssh -L 4000:localhost:4000 -L 4001:localhost:4001 -L 5230:localhost:5230 -L 8080:localhost:8080 -L 4002:localhost:4002 root@your-server-ip
+ssh -L 4000:localhost:4000 -L 4001:localhost:4001 -L 5230:localhost:5230 -L 8334:localhost:8334 -L 4002:localhost:4002 root@your-server-ip
 ```
 
 #### Access Services Locally
@@ -213,7 +223,7 @@ ssh -L 4000:localhost:4000 -L 4001:localhost:4001 -L 5230:localhost:5230 -L 8080
 - **Gitea**: http://localhost:4000
 - **Umami**: http://localhost:4001  
 - **Memos**: http://localhost:5230
-- **Filestash**: http://localhost:8080
+- **Filestash**: http://localhost:8334
 - **Uptime Kuma**: http://localhost:4002
 
 #### Cleanup After Testing
