@@ -7,7 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a Kubernetes-based infrastructure repository that manages multiple self-hosted services with ingress routing and persistent storage. The architecture consists of:
 
 - **Kubernetes Cluster**: Single-node cluster managing all services
-- **Ingress Controller**: nginx-ingress handles SSL/TLS termination and routing
+- **Ingress Controller**: nginx-ingress with hostNetwork for direct port access (80/443)
+- **Firewall Bypass**: Docker-style iptables rules for external access without UFW changes
+- **SSL Certificates**: Individual Let's Encrypt certificates per domain (not multi-domain)
 - **Persistent Storage**: Local volumes for stateful services
 - **PostgreSQL**: Shared database StatefulSet with multiple databases
 
@@ -71,7 +73,9 @@ kubectl port-forward svc/gitea 4000:3000 -n base-infra
 
 - Kubernetes secrets stored in `k8s/namespace/secrets.yaml` (not tracked in repo)
 - PostgreSQL uses ConfigMap for database initialization
-- Ingress controller maps domains to Kubernetes services
+- Ingress controller uses hostNetwork: true for direct port 80/443 access
+- Docker-style iptables bypass rules: `DOCKER-STYLE-HTTP-BYPASS` (port 80), `DOCKER-STYLE-HTTPS-BYPASS` (port 443)
+- Individual SSL certificates per domain (each domain gets separate Let's Encrypt certificate)
 - Static websites served from hostPath volumes at `/root/static/`
 
 ## Domain Mapping (Ingress)
@@ -90,6 +94,15 @@ kubectl port-forward svc/gitea 4000:3000 -n base-infra
 - Services communicate via Kubernetes DNS: `service-name.namespace.svc.cluster.local`
 - All services use the shared PostgreSQL StatefulSet with multiple databases
 - Storage is limited to 512Mi per service (expandable by updating PV specs)
+- External access uses nginx-ingress with hostNetwork: true (no NodePort/LoadBalancer needed)
+- iptables bypass rules inserted at position 1 in INPUT chain (before UFW/Calico rules)
+
+## Network Security
+
+- UFW firewall remains unchanged (only SSH port 22 allowed)
+- External access achieved via Docker-style iptables bypass rules
+- Rules automatically added by deploy script, removed by cleanup script
+- Individual SSL certificates per domain prevent certificate domain conflicts
 
 ## Git Commit Guidelines
 
@@ -109,3 +122,11 @@ kubectl port-forward svc/gitea 4000:3000 -n base-infra
 - If database initialization fails, fix the cleanup script to properly remove all data directories
 - Database issues must be resolved by fixing scripts, not by manual database commands
 - #memoize principle: Always improve automation rather than doing manual work
+
+## Testing and Verification Rules
+
+- **DO NOT SAY SOMETHING IS WORKING UNTIL YOU VERIFY IT**
+- **Test actual external URLs that users will access**
+- **Verify both HTTP and HTTPS from external perspective**
+- **Check all services, not just one**
+- **Test from user's perspective, not localhost**
