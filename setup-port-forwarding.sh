@@ -13,15 +13,29 @@ HTTPS_NODEPORT=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o js
 
 echo "📋 Detected NodePorts: HTTP=$HTTP_NODEPORT, HTTPS=$HTTPS_NODEPORT"
 
+# Get node IP for DNAT rules
+NODE_IP=$(hostname -I | awk '{print $1}')
+
 # Check if rules already exist to avoid duplicates
-if ! iptables -t nat -C PREROUTING -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:$HTTP_NODEPORT 2>/dev/null; then
-    echo "🔀 Adding DNAT rule: 80 → $HTTP_NODEPORT"
-    iptables -t nat -A PREROUTING -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:$HTTP_NODEPORT
+if ! iptables -t nat -C PREROUTING -p tcp --dport 80 -j DNAT --to-destination $NODE_IP:$HTTP_NODEPORT 2>/dev/null; then
+    echo "🔀 Adding DNAT rule: 80 → $NODE_IP:$HTTP_NODEPORT"
+    iptables -t nat -A PREROUTING -p tcp --dport 80 -j DNAT --to-destination $NODE_IP:$HTTP_NODEPORT
 fi
 
-if ! iptables -t nat -C PREROUTING -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:$HTTPS_NODEPORT 2>/dev/null; then
-    echo "🔀 Adding DNAT rule: 443 → $HTTPS_NODEPORT"
-    iptables -t nat -A PREROUTING -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:$HTTPS_NODEPORT
+if ! iptables -t nat -C PREROUTING -p tcp --dport 443 -j DNAT --to-destination $NODE_IP:$HTTPS_NODEPORT 2>/dev/null; then
+    echo "🔀 Adding DNAT rule: 443 → $NODE_IP:$HTTPS_NODEPORT"
+    iptables -t nat -A PREROUTING -p tcp --dport 443 -j DNAT --to-destination $NODE_IP:$HTTPS_NODEPORT
+fi
+
+# Add OUTPUT chain rules for localhost traffic
+if ! iptables -t nat -C OUTPUT -p tcp --dport 80 -j DNAT --to-destination $NODE_IP:$HTTP_NODEPORT 2>/dev/null; then
+    echo "🔀 Adding OUTPUT DNAT rule: localhost:80 → $NODE_IP:$HTTP_NODEPORT"
+    iptables -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to-destination $NODE_IP:$HTTP_NODEPORT
+fi
+
+if ! iptables -t nat -C OUTPUT -p tcp --dport 443 -j DNAT --to-destination $NODE_IP:$HTTPS_NODEPORT 2>/dev/null; then
+    echo "🔀 Adding OUTPUT DNAT rule: localhost:443 → $NODE_IP:$HTTPS_NODEPORT"
+    iptables -t nat -A OUTPUT -p tcp --dport 443 -j DNAT --to-destination $NODE_IP:$HTTPS_NODEPORT
 fi
 
 if ! iptables -C FORWARD -p tcp --dport $HTTP_NODEPORT -j ACCEPT 2>/dev/null; then
