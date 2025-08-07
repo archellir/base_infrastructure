@@ -57,7 +57,7 @@ logs: ## Show logs for a service (specify SERVICE=service-name)
 
 update: deploy-prep ## Update specific service configuration (specify SERVICE=service-name)
 	@echo "🔄 Updating $(SERVICE) on $(SERVER)..."
-	@ssh root@$(SERVER) "cd $(REPO_DIR) && kubectl apply -f k8s/$(SERVICE)/"
+	@ssh root@$(SERVER) "cd $(REPO_DIR) && kubectl apply -f k8s/$(SERVICE)/ --validate=false"
 	@ssh root@$(SERVER) "kubectl rollout restart deployment/$(SERVICE) -n base-infra"
 	@ssh root@$(SERVER) "kubectl get pods -n base-infra | grep $(SERVICE)"
 	@echo "✅ $(SERVICE) updated and restarted"
@@ -70,7 +70,7 @@ restart: ## Restart a service (specify SERVICE=service-name)
 
 apply-all: deploy-prep ## Apply all k8s configurations without full deploy
 	@echo "📦 Applying all configurations on $(SERVER)..."
-	@ssh root@$(SERVER) "cd $(REPO_DIR) && kubectl apply -f k8s/"
+	@ssh root@$(SERVER) "cd $(REPO_DIR) && kubectl apply -f k8s/ --validate=false"
 	@echo "✅ All configurations applied"
 
 exec: ## Execute command in pod (specify SERVICE=service-name CMD="command")
