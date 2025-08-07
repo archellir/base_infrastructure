@@ -4,22 +4,38 @@ metadata:
   name: base-infra-ingress
   namespace: base-infra
   annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: nginx
   tls:
   - hosts:
     - git.arcbjorn.com
+    secretName: git-arcbjorn-tls
+  - hosts:
     - analytics.arcbjorn.com
+    secretName: analytics-arcbjorn-tls
+  - hosts:
     - uptime.arcbjorn.com
+    secretName: uptime-arcbjorn-tls
+  - hosts:
     - server.arcbjorn.com
+    secretName: server-arcbjorn-tls
+  - hosts:
     - memos.arcbjorn.com
+    secretName: memos-arcbjorn-tls
+  - hosts:
     - dashboard.arcbjorn.com
+    secretName: dashboard-arcbjorn-tls
+  - hosts:
     - homepage.arcbjorn.com
+    secretName: homepage-arcbjorn-tls
+  - hosts:
     - argentinamusic.space
+    secretName: argentinamusic-tls
+  - hosts:
     - humansconnect.ai
-    secretName: arcbjorn-tls
+    secretName: humansconnect-tls
   rules:
   
   # Git Repository Hosting
@@ -68,7 +84,7 @@ spec:
           service:
             name: filestash
             port:
-              number: 8080
+              number: 8334
   
   
   # Notes and Memos

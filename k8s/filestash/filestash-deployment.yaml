@@ -95,6 +95,6 @@ spec:
   selector:
     app: filestash
   ports:
-  - port: 8080
+  - port: 8334
     targetPort: 8334
   type: ClusterIP
