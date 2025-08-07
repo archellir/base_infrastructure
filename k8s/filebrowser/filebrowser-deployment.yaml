@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: filebrowser
+  namespace: base-infra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: filebrowser
+  template:
+    metadata:
+      labels:
+        app: filebrowser
+    spec:
+      containers:
+      - name: filebrowser
+        image: filebrowser/filebrowser
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: filebrowser-data
+          mountPath: /config
+        - name: filebrowser-data
+          mountPath: /database
+        - name: server-root
+          mountPath: /srv
+        env:
+        - name: FB_BASEURL
+          value: "/"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: filebrowser-data
+        persistentVolumeClaim:
+          claimName: filebrowser-data
+      - name: server-root
+        hostPath:
+          path: /root
+          type: Directory
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: filebrowser-data
+  namespace: base-infra
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 512Mi
+  selector:
+    matchLabels:
+      app: filebrowser
+      volume: data
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: filebrowser
+  namespace: base-infra
+spec:
+  selector:
+    app: filebrowser
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP
