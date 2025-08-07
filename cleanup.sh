@@ -12,11 +12,16 @@ echo "   - All Kubernetes resources in base-infra namespace"
 echo "   - All PersistentVolumes and data"
 echo "   - All application data in /root/containers/"
 echo ""
-read -p "Are you sure you want to continue? (y/N): " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "❌ Cleanup cancelled"
-    exit 1
+if [[ "$1" == "--ingress" || "$1" == "-i" ]]; then
+    REPLY="y"
+    echo "🧹 Proceeding with cleanup (via argument)..."
+else
+    read -p "Are you sure you want to continue? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "❌ Cleanup cancelled"
+        exit 1
+    fi
 fi
 
 # Step 1: Delete all Kubernetes resources
@@ -29,14 +34,15 @@ echo "🔐 Cleaning up SSL certificates and cert-manager..."
 kubectl delete clusterissuer letsencrypt-prod --ignore-not-found=true || true
 kubectl delete namespace cert-manager --ignore-not-found=true || true
 
-# Clean up port forwarding rules
-echo "🔀 Cleaning up port forwarding rules..."
-if [ -f remove-port-forwarding.sh ]; then
-    chmod +x remove-port-forwarding.sh
-    ./remove-port-forwarding.sh || echo "⚠️  Some port forwarding rules may not exist"
-else
-    echo "⚠️  remove-port-forwarding.sh not found, skipping iptables cleanup"
-fi
+# Clean up ingress controller
+echo "🔀 Cleaning up ingress controller..."
+kubectl delete namespace ingress-nginx --ignore-not-found=true || true
+
+# Clean up Docker-style iptables bypass rules
+echo "🔧 Removing iptables bypass rules..."
+iptables -D INPUT -p tcp --dport 80 -j ACCEPT -m comment --comment "DOCKER-STYLE-HTTP-BYPASS" 2>/dev/null || true
+iptables -D INPUT -p tcp --dport 443 -j ACCEPT -m comment --comment "DOCKER-STYLE-HTTPS-BYPASS" 2>/dev/null || true
+echo "✅ iptables bypass rules removed"
 
 # Wait for namespace to be fully deleted
 echo "⏳ Waiting for namespace cleanup..."

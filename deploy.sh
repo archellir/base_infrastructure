@@ -96,11 +96,27 @@ kubectl apply -f k8s/uptime-kuma/
 progress "📄 Deploying static sites"
 kubectl apply -f k8s/static-sites/
 
-# Step 7: Ask about ingress deployment
+# Step 7: Ask about ingress deployment or use argument
 progress "🔀 Configuring ingress routing"
-read -p "Deploy ingress routing? (y/N): " -n 1 -r
-echo
+if [[ "$1" == "--ingress" || "$1" == "-i" ]]; then
+    REPLY="y"
+    echo "🔀 Deploying ingress routing (via argument)..."
+else
+    read -p "Deploy ingress routing? (y/N): " -n 1 -r
+    echo
+fi
 if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "🔀 Installing ingress controller with host network..."
+    
+    # Add Docker-style iptables bypass rules for external access
+    echo "🔧 Adding iptables bypass rules for external access..."
+    iptables -I INPUT 1 -p tcp --dport 80 -j ACCEPT -m comment --comment "DOCKER-STYLE-HTTP-BYPASS"
+    iptables -I INPUT 1 -p tcp --dport 443 -j ACCEPT -m comment --comment "DOCKER-STYLE-HTTPS-BYPASS"
+    echo "✅ iptables rules added - external access enabled on ports 80/443"
+    
+    kubectl apply -f k8s/ingress-controller/
+    wait_for_condition "Waiting for ingress controller to be ready" "kubectl get pods -n ingress-nginx -l app.kubernetes.io/component=controller -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q 'Running'" || true
+    
     echo "🔐 Installing cert-manager for SSL certificates..."
     kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.yaml
     wait_for_condition "Waiting for cert-manager to be ready" "kubectl get pods -n cert-manager -l app=cert-manager -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q 'Running'" || true
@@ -114,11 +130,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "🔀 Setting up ingress routing with SSL..."
     kubectl apply -f k8s/ingress/
     
-    echo "🔀 Setting up Docker-style port forwarding (80/443 → NodePort)..."
-    chmod +x setup-port-forwarding.sh
-    ./setup-port-forwarding.sh
-    
     echo "🔐 SSL certificates will be automatically provisioned by Let's Encrypt"
+    echo "✅ Ingress controller running with hostNetwork - no port forwarding needed!"
 else
     echo "⏭️  Skipping ingress deployment"
 fi
@@ -144,5 +157,6 @@ echo "🔍 Use 'kubectl logs -f deployment/<service-name> -n base-infra' to view
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo ""
     echo "To enable ingress routing later:"
+    echo "kubectl apply -f k8s/ingress-controller/"
     echo "kubectl apply -f k8s/ingress/"
 fi
