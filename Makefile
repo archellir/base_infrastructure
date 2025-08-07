@@ -79,8 +79,8 @@ exec: ## Execute command in pod (specify SERVICE=service-name CMD="command")
 
 restart-all: ## Restart all services
 	@echo "🔄 Restarting all services on $(SERVER)..."
-	@ssh root@$(SERVER) "KUBECONFIG=/etc/kubernetes/admin.conf kubectl rollout restart deployments --all -n base-infra"
-	@ssh root@$(SERVER) "KUBECONFIG=/etc/kubernetes/admin.conf kubectl rollout restart statefulsets --all -n base-infra"
+	@ssh root@$(SERVER) "KUBECONFIG=/etc/kubernetes/admin.conf kubectl rollout restart deployment -n base-infra"
+	@ssh root@$(SERVER) "KUBECONFIG=/etc/kubernetes/admin.conf kubectl rollout restart statefulset -n base-infra"
 	@echo "⏳ Waiting for services to be ready..."
 	@sleep 5
 	@ssh root@$(SERVER) "KUBECONFIG=/etc/kubernetes/admin.conf kubectl get pods -n base-infra"
@@ -90,8 +90,8 @@ update-all: deploy-prep ## Update and restart all services
 	@echo "🔄 Updating all services on $(SERVER)..."
 	@ssh root@$(SERVER) "cd $(REPO_DIR) && KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -R -f k8s/ --validate=false"
 	@echo "🔄 Restarting all services..."
-	@ssh root@$(SERVER) "KUBECONFIG=/etc/kubernetes/admin.conf kubectl rollout restart deployments --all -n base-infra"
-	@ssh root@$(SERVER) "KUBECONFIG=/etc/kubernetes/admin.conf kubectl rollout restart statefulsets --all -n base-infra"
+	@ssh root@$(SERVER) "KUBECONFIG=/etc/kubernetes/admin.conf kubectl rollout restart deployment -n base-infra"
+	@ssh root@$(SERVER) "KUBECONFIG=/etc/kubernetes/admin.conf kubectl rollout restart statefulset -n base-infra"
 	@echo "⏳ Waiting for services to be ready..."
 	@sleep 5
 	@ssh root@$(SERVER) "KUBECONFIG=/etc/kubernetes/admin.conf kubectl get pods -n base-infra"
