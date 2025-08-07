@@ -114,6 +114,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     iptables -I INPUT 1 -p tcp --dport 443 -j ACCEPT -m comment --comment "DOCKER-STYLE-HTTPS-BYPASS"
     echo "✅ iptables rules added - external access enabled on ports 80/443"
     
+    # Clean up any conflicting admission webhooks from previous installations
+    echo "🔧 Cleaning up conflicting admission webhooks..."
+    kubectl delete validatingwebhookconfigurations ingress-nginx-admission --ignore-not-found=true
+    
     kubectl apply -f k8s/ingress-controller/
     wait_for_condition "Waiting for ingress controller to be ready" "kubectl get pods -n ingress-nginx -l app.kubernetes.io/component=controller -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q 'Running'" || true
     
@@ -124,11 +128,25 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "🔐 Waiting for cert-manager webhook to be ready..."
     kubectl wait --for=condition=available --timeout=120s deployment/cert-manager-webhook -n cert-manager
     
+    echo "🔐 Additional wait for admission webhook to be fully ready..."
+    sleep 15
+    
     echo "🔐 Creating Let's Encrypt ClusterIssuer..."
     kubectl apply -f k8s/cert-manager/
     
+    echo "🔐 Waiting for ClusterIssuer to be ready..."
+    wait_for_condition "Waiting for ClusterIssuer to be ready" "kubectl get clusterissuer letsencrypt-prod -o jsonpath='{.status.conditions[0].status}' 2>/dev/null | grep -q 'True'" || true
+    
+    echo "🔐 Additional wait for webhook validation to be fully ready..."
+    sleep 10
+    
     echo "🔀 Setting up ingress routing with SSL..."
-    kubectl apply -f k8s/ingress/
+    kubectl apply -f k8s/ingress/ || {
+        echo "⚠️  Ingress creation failed, cleaning up admission webhooks and retrying..."
+        kubectl delete validatingwebhookconfigurations ingress-nginx-admission --ignore-not-found=true
+        sleep 5
+        kubectl apply -f k8s/ingress/
+    }
     
     echo "🔐 SSL certificates will be automatically provisioned by Let's Encrypt"
     echo "✅ Ingress controller running with hostNetwork - no port forwarding needed!"

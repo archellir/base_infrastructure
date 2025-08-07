@@ -105,6 +105,10 @@ if [[ "$REMOVE_INGRESS" == true ]]; then
     echo "🔀 Cleaning up ingress controller..."
     kubectl delete namespace ingress-nginx --ignore-not-found=true || true
 
+    echo "🔧 Cleaning up admission webhooks..."
+    kubectl delete validatingwebhookconfigurations ingress-nginx-admission --ignore-not-found=true || true
+    kubectl delete mutatingwebhookconfigurations ingress-nginx-admission --ignore-not-found=true || true
+
     echo "🔧 Removing iptables bypass rules..."
     iptables -D INPUT -p tcp --dport 80 -j ACCEPT -m comment --comment "DOCKER-STYLE-HTTP-BYPASS" 2>/dev/null || true
     iptables -D INPUT -p tcp --dport 443 -j ACCEPT -m comment --comment "DOCKER-STYLE-HTTPS-BYPASS" 2>/dev/null || true

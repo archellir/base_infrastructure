@@ -121,6 +121,7 @@ kubectl port-forward svc/gitea 4000:3000 -n base-infra
 - **ALWAYS fix the automation scripts instead of manual intervention**
 - If database initialization fails, fix the cleanup script to properly remove all data directories
 - Database issues must be resolved by fixing scripts, not by manual database commands
+- Ingress admission webhook conflicts are automatically handled in deploy script
 - #memoize principle: Always improve automation rather than doing manual work
 
 ## Testing and Verification Rules
