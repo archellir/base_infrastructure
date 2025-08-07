@@ -118,7 +118,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "🔧 Cleaning up conflicting admission webhooks..."
     kubectl delete validatingwebhookconfigurations ingress-nginx-admission --ignore-not-found=true
     
-    kubectl apply -f k8s/ingress-controller/
+    echo "🔧 Installing standard nginx ingress controller..."
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/baremetal/deploy.yaml
+    
+    echo "🔧 Enabling hostNetwork for direct port access..."
+    kubectl patch deployment ingress-nginx-controller -n ingress-nginx -p '{"spec":{"template":{"spec":{"hostNetwork":true,"dnsPolicy":"ClusterFirstWithHostNet"}}}}'
+    
     wait_for_condition "Waiting for ingress controller to be ready" "kubectl get pods -n ingress-nginx -l app.kubernetes.io/component=controller -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q 'Running'" || true
     
     echo "🔐 Installing cert-manager for SSL certificates..."
