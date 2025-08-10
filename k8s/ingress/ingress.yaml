@@ -38,7 +38,7 @@ spec:
     secretName: humansconnect-tls
   rules:
   
-  # Git Repository Hosting
+  # Git Repository Hosting & Container Registry
   - host: git.arcbjorn.com
     http:
       paths:
