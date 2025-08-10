@@ -126,6 +126,7 @@ if [[ "$REMOVE_DATA" == true ]]; then
     echo "💾 Cleaning up persistent storage..."
     rm -rf /root/containers/postgresql-k8s-data
     rm -rf /root/containers/gitea-k8s-data
+    rm -rf /root/containers/gitea-runner-k8s-data
     rm -rf /root/containers/memos-k8s-data
     rm -rf /root/containers/filestash-k8s
     rm -rf /root/containers/uptime-kuma-k8s-data
@@ -133,6 +134,7 @@ if [[ "$REMOVE_DATA" == true ]]; then
     echo "📁 Creating fresh storage directories..."
     mkdir -p /root/containers/postgresql-k8s-data
     mkdir -p /root/containers/gitea-k8s-data
+    mkdir -p /root/containers/gitea-runner-k8s-data
     mkdir -p /root/containers/memos-k8s-data
     mkdir -p /root/containers/filestash-k8s/data
     mkdir -p /root/containers/filestash-k8s/config
@@ -142,6 +144,7 @@ if [[ "$REMOVE_DATA" == true ]]; then
     # Set proper ownership for containers  
     chown -R 1000:1000 /root/containers/postgresql-k8s-data
     chown -R 1000:1000 /root/containers/gitea-k8s-data
+    chown -R 1000:1000 /root/containers/gitea-runner-k8s-data
     chown -R 1000:1000 /root/containers/memos-k8s-data
     chown -R 1000:1000 /root/containers/filestash-k8s
     chown -R 1000:1000 /root/containers/uptime-kuma-k8s-data

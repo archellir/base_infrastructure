@@ -86,11 +86,21 @@ wait_for_condition "Waiting for PostgreSQL to be ready" "kubectl get pods -l app
 
 # Step 5: Deploy application services
 progress "🌐 Deploying application services"
-kubectl apply -f k8s/gitea/
+kubectl apply -f k8s/gitea/gitea-deployment.yaml
 kubectl apply -f k8s/umami/
 kubectl apply -f k8s/memos/
 kubectl apply -f k8s/filestash/
 kubectl apply -f k8s/uptime-kuma/
+
+# Wait for Gitea to be ready before deploying runner
+wait_for_condition "Waiting for Gitea to be ready" "kubectl get pods -l app=gitea -n base-infra -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q 'Running'" || true
+
+# Deploy Gitea Actions runner (requires manual token setup)
+echo "🤖 Deploying Gitea Actions runner..."
+kubectl apply -f k8s/gitea/gitea-actions-runner.yaml
+echo "ℹ️  Note: Runner requires registration token from Gitea admin panel"
+echo "    Get token from: https://git.arcbjorn.com/admin/actions/runners"
+echo "    Add token with: kubectl patch secret app-secrets -n base-infra --type='merge' -p='{\"data\":{\"GITEA_RUNNER_TOKEN\":\"'\$(echo -n 'YOUR_TOKEN' | base64)'\"}}'"
 
 # Step 6: Deploy static sites
 progress "📄 Deploying static sites"

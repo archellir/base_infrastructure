@@ -21,7 +21,8 @@ Each service directory under `k8s/` contains:
 
 Active services:
 - **k8s/postgresql/**: Shared PostgreSQL StatefulSet
-- **k8s/gitea/**: Git hosting service (git.arcbjorn.com)
+- **k8s/gitea/**: Git hosting service with container registry (git.arcbjorn.com)
+- **k8s/gitea/gitea-actions-runner**: Gitea Actions runner for CI/CD workflows
 - **k8s/umami/**: Analytics platform (analytics.arcbjorn.com)
 - **k8s/memos/**: Note-taking application (memos.arcbjorn.com)
 - **k8s/filestash/**: File management interface (server.arcbjorn.com)
@@ -42,6 +43,7 @@ kubectl apply -f k8s/
 
 # View service logs
 kubectl logs -f deployment/gitea -n base-infra
+kubectl logs -f deployment/gitea-actions-runner -n base-infra
 kubectl logs -f deployment/umami -n base-infra
 ```
 
@@ -61,12 +63,59 @@ kubectl exec -it postgresql-0 -n base-infra -- psql -U postgres -d postgres -c "
 ```bash  
 # Restart a service
 kubectl rollout restart deployment/gitea -n base-infra
+kubectl rollout restart deployment/gitea-actions-runner -n base-infra
 
 # Scale a service
 kubectl scale deployment gitea --replicas=2 -n base-infra
 
 # Port forward for testing
 kubectl port-forward svc/gitea 4000:3000 -n base-infra
+```
+
+### Gitea Actions and CI/CD
+```bash
+# Check runner status
+kubectl get pods -n base-infra -l app=gitea-actions-runner
+kubectl logs -f deployment/gitea-actions-runner -n base-infra
+
+# Get runner registration token (from Gitea admin panel)
+# https://git.arcbjorn.com/admin/actions/runners
+
+# Add runner token to secrets
+kubectl patch secret app-secrets -n base-infra --type='merge' -p='{"data":{"GITEA_RUNNER_TOKEN":"'$(echo -n 'YOUR_TOKEN_HERE' | base64)'"}}'
+
+# Example workflow for Docker build and push to registry
+# Place in repository: .gitea/workflows/docker-build.yml
+```
+
+Example CI/CD workflow:
+```yaml
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: |
+          git.arcbjorn.com/${{ gitea.repository }}:${{ gitea.sha }}
+          git.arcbjorn.com/${{ gitea.repository }}:latest
 ```
 
 ## Configuration Dependencies
@@ -91,6 +140,7 @@ kubectl port-forward svc/gitea 4000:3000 -n base-infra
 
 - Database connections use Kubernetes service names: `postgresql://username:password@postgresql:5432/db_name`
 - PersistentVolumes require proper host directory permissions: `chown -R 1000:1000 /root/containers/`
+- Gitea Actions runner requires Docker socket access and privileged container mode
 - Services communicate via Kubernetes DNS: `service-name.namespace.svc.cluster.local`
 - All services use the shared PostgreSQL StatefulSet with multiple databases
 - Storage is limited to 512Mi per service (expandable by updating PV specs)

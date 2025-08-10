@@ -5,7 +5,8 @@ Self-hosted services infrastructure deployed on Kubernetes with persistent stora
 ## Services
 
 - **PostgreSQL** - Shared database with multiple database support
-- **Gitea** - Git hosting service (git.arcbjorn.com)
+- **Gitea** - Git hosting service with container registry (git.arcbjorn.com)
+- **Gitea Actions Runner** - CI/CD runner for Docker builds and deployments
 - **Umami** - Analytics platform (analytics.arcbjorn.com)
 - **Memos** - Note-taking application (memos.arcbjorn.com)
 - **Filestash** - File management interface (server.arcbjorn.com)
@@ -64,7 +65,9 @@ Internet → Ingress → Services → Pods → Containers
 │ │ • postgresql (StatefulSet)      │────►│ • postgresql-data (20Gi)    │ │
 │ │   shared database               │     │   database files            │ │
 │ │ • gitea (Deployment)            │────►│ • gitea-data (512Mi)        │ │
-│ │   git hosting                   │     │   git repositories          │ │
+│ │   git hosting + registry       │     │   git repositories          │ │
+│ │ • gitea-actions-runner (Deploy) │────►│ • gitea-runner-data (512Mi) │ │
+│ │   CI/CD automation              │     │   runner workspace          │ │
 │ │ • umami (Deployment)            │────►│ • memos-data (512Mi)        │ │
 │ │   web analytics                 │     │   notes & content           │ │
 │ │ • memos (Deployment)            │────►│ • filestash-data (512Mi)    │ │
@@ -177,6 +180,7 @@ kubectl get services -n base-infra
 
 # View logs
 kubectl logs -f deployment/gitea -n base-infra
+kubectl logs -f deployment/gitea-actions-runner -n base-infra
 kubectl logs -f deployment/umami -n base-infra
 
 # Apply configurations
@@ -208,6 +212,8 @@ kubectl port-forward svc/umami 4001:3000 -n base-infra &
 kubectl port-forward svc/memos 5230:5230 -n base-infra &
 kubectl port-forward svc/filestash 8334:8334 -n base-infra &
 kubectl port-forward svc/uptime-kuma 4002:3001 -n base-infra &
+
+# Note: Gitea Actions Runner doesn't need port forwarding - it runs internally
 ```
 
 #### From Your Local Machine
@@ -235,6 +241,51 @@ pkill -f "kubectl port-forward"
 
 Exit SSH tunnel: `Ctrl+C` or `exit` in terminal
 
+### CI/CD with Gitea Actions
+
+**Setup Runner (one-time):**
+```bash
+# Get registration token from Gitea admin panel
+# https://git.arcbjorn.com/admin/actions/runners
+
+# Add token to secrets
+kubectl patch secret app-secrets -n base-infra --type='merge' -p='{"data":{"GITEA_RUNNER_TOKEN":"'$(echo -n 'YOUR_TOKEN' | base64)'"}}'
+
+# Check runner status
+kubectl get pods -n base-infra -l app=gitea-actions-runner
+kubectl logs -f deployment/gitea-actions-runner -n base-infra
+```
+
+**Example Workflow (.gitea/workflows/docker-build.yml):**
+```yaml
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: |
+          git.arcbjorn.com/${{ gitea.repository }}:${{ gitea.sha }}
+          git.arcbjorn.com/${{ gitea.repository }}:latest
+```
+
 ### Database Operations
 ```bash
 # Backup all databases
@@ -257,7 +308,7 @@ chmod +x postgresql/create-multiple-postgresql-databases.sh
 ```
 ├── k8s/                    # Kubernetes manifests
 │   ├── postgresql/         # Database StatefulSet
-│   ├── gitea/             # Git hosting service  
+│   ├── gitea/             # Git hosting service + Actions runner
 │   ├── umami/             # Analytics platform
 │   ├── memos/             # Note-taking app
 │   ├── filestash/         # File management

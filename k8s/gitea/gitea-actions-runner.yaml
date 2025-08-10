@@ -1,0 +1,148 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitea-actions-runner
+  namespace: base-infra
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: gitea-actions-runner
+  template:
+    metadata:
+      labels:
+        app: gitea-actions-runner
+    spec:
+      serviceAccountName: gitea-actions-runner
+      containers:
+      - name: runner
+        image: gitea/act_runner:latest
+        env:
+        - name: GITEA_INSTANCE_URL
+          value: "https://git.arcbjorn.com"
+        - name: GITEA_RUNNER_REGISTRATION_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: GITEA_RUNNER_TOKEN
+        - name: GITEA_RUNNER_NAME
+          value: "k8s-runner"
+        - name: GITEA_RUNNER_LABELS
+          value: "ubuntu-latest:docker://node:18-alpine,ubuntu-22.04:docker://node:18-alpine"
+        - name: CONFIG_FILE
+          value: "/config/config.yaml"
+        volumeMounts:
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
+        - name: runner-data
+          mountPath: /data
+        - name: config
+          mountPath: /config
+        - name: timezone
+          mountPath: /etc/timezone
+          readOnly: true
+        - name: localtime
+          mountPath: /etc/localtime
+          readOnly: true
+        securityContext:
+          privileged: true
+      volumes:
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
+          type: Socket
+      - name: runner-data
+        persistentVolumeClaim:
+          claimName: gitea-runner-data
+      - name: config
+        configMap:
+          name: gitea-runner-config
+      - name: timezone
+        hostPath:
+          path: /etc/timezone
+          type: File
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+          type: File
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gitea-runner-data
+  namespace: base-infra
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 512Mi
+  selector:
+    matchLabels:
+      app: gitea-actions-runner
+      volume: data
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gitea-actions-runner
+  namespace: base-infra
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: gitea-actions-runner
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "secrets", "configmaps"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: gitea-actions-runner
+subjects:
+- kind: ServiceAccount
+  name: gitea-actions-runner
+  namespace: base-infra
+roleRef:
+  kind: ClusterRole
+  name: gitea-actions-runner
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitea-runner-config
+  namespace: base-infra
+data:
+  config.yaml: |
+    log:
+      level: info
+    runner:
+      file: .runner
+      capacity: 1
+      timeout: 3h
+    cache:
+      enabled: true
+      dir: /data/cache
+    container:
+      network: bridge
+      privileged: true
+      options:
+      valid_volumes:
+        - /var/run/docker.sock
+        - /data
+      docker_host: unix:///var/run/docker.sock
+    host:
+      workdir_parent: /data/workspace

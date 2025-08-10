@@ -63,6 +63,16 @@ spec:
           value: "local"
         - name: GITEA__packages__STORAGE__PATH
           value: "/data/packages"
+        - name: GITEA__actions__ENABLED
+          value: "true"
+        - name: GITEA__actions__DEFAULT_ACTIONS_URL
+          value: "https://github.com"
+        - name: GITEA__packages__LIMIT_TOTAL_OWNER_COUNT
+          value: "-1"
+        - name: GITEA__packages__LIMIT_SIZE_OWNER
+          value: "-1"
+        - name: GITEA__packages__CLEANUP_RULE_MAX_COUNT
+          value: "2"
         volumeMounts:
         - name: gitea-data
           mountPath: /data

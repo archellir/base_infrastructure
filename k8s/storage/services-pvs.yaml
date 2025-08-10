@@ -126,3 +126,29 @@ spec:
           operator: In
           values:
           - intel-4cpu-ubuntu-16gb-nbg-base
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: gitea-runner-pv
+  labels:
+    app: gitea-actions-runner
+    volume: data
+spec:
+  capacity:
+    storage: 512Mi
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /root/containers/gitea-runner-k8s-data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - intel-4cpu-ubuntu-16gb-nbg-base
