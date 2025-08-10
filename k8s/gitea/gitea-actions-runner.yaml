@@ -26,7 +26,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: app-secrets
-              key: GITEA_RUNNER_TOKEN
+              key: GITEA_RUNNER_REGISTRATION_TOKEN
         - name: GITEA_RUNNER_NAME
           value: "k8s-runner"
         - name: GITEA_RUNNER_LABELS
