@@ -57,6 +57,12 @@ spec:
           value: "https://git.arcbjorn.com/"
         - name: GITEA__service__DISABLE_REGISTRATION
           value: "true"
+        - name: GITEA__packages__ENABLED
+          value: "true"
+        - name: GITEA__packages__STORAGE__TYPE
+          value: "local"
+        - name: GITEA__packages__STORAGE__PATH
+          value: "/data/packages"
         volumeMounts:
         - name: gitea-data
           mountPath: /data
