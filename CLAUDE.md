@@ -25,7 +25,7 @@ Active services:
 - **k8s/gitea/gitea-actions-runner**: Gitea Actions runner for CI/CD workflows
 - **k8s/umami/**: Analytics platform (analytics.arcbjorn.com)
 - **k8s/memos/**: Note-taking application (memos.arcbjorn.com)
-- **k8s/filestash/**: File management interface (server.arcbjorn.com)
+- **k8s/filebrowser/**: File management interface (server.arcbjorn.com)
 - **k8s/uptime-kuma/**: Uptime monitoring (uptime.arcbjorn.com)
 - **k8s/static-sites/**: Static website deployments
 
@@ -132,7 +132,7 @@ jobs:
 - `git.arcbjorn.com` → Gitea service (gitea:3000)
 - `analytics.arcbjorn.com` → Umami service (umami:3000)
 - `memos.arcbjorn.com` → Memos service (memos:5230)
-- `server.arcbjorn.com` → Filestash service (filestash:8334)
+- `server.arcbjorn.com` → Filebrowser service (filebrowser:80)
 - `uptime.arcbjorn.com` → Uptime Kuma service (uptime-kuma:3001)
 - Static sites: `dashboard.arcbjorn.com`, `homepage.arcbjorn.com`, `argentinamusic.space`, `humansconnect.ai`
 
