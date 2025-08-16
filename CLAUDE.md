@@ -162,7 +162,7 @@ jobs:
 - `git.arcbjorn.com` → Gitea service (gitea:3000)
 - `analytics.arcbjorn.com` → Umami service (umami:3000)
 - `memos.arcbjorn.com` → Memos service (memos:5230)
-- `server.arcbjorn.com` → Filebrowser service (filebrowser:80)
+- `server.arcbjorn.com` → Filebrowser service (filebrowser:8080)
 - `uptime.arcbjorn.com` → Uptime Kuma service (uptime-kuma:3001)
 - Static sites: `dashboard.arcbjorn.com`, `homepage.arcbjorn.com`, `argentinamusic.space`, `humansconnect.ai`
 
