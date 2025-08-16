@@ -89,7 +89,7 @@ progress "🌐 Deploying application services"
 kubectl apply -f k8s/gitea/gitea-deployment.yaml
 kubectl apply -f k8s/umami/
 kubectl apply -f k8s/memos/
-kubectl apply -f k8s/filestash/
+kubectl apply -f k8s/filebrowser/
 kubectl apply -f k8s/uptime-kuma/
 
 # Wait for Gitea to be ready before deploying runner
