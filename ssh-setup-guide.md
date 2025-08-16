@@ -39,13 +39,13 @@ pkill -f "kubectl port-forward"
 **SSH Tunneling (from local machine):**
 ```bash
 # Create tunnels to access services locally
-ssh -L 4000:localhost:4000 -L 4001:localhost:4001 -L 5230:localhost:5230 -L 8334:localhost:8334 root@your-server-ip
+ssh -L 4000:localhost:4000 -L 4001:localhost:4001 -L 5230:localhost:5230 -L 8080:localhost:8080 root@your-server-ip
 
 # Then access:
 # http://localhost:4000 (Gitea)
 # http://localhost:4001 (Umami)  
 # http://localhost:5230 (Memos)
-# http://localhost:8334 (Filestash)
+# http://localhost:8080 (Filebrowser)
 ```
 
 ## Quick Troubleshooting
