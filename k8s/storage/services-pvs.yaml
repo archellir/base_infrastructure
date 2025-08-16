@@ -53,58 +53,6 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: filestash-data-pv
-  labels:
-    app: filestash
-    volume: data
-spec:
-  capacity:
-    storage: 512Mi
-  accessModes:
-  - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-storage
-  local:
-    path: /root/containers/filestash-k8s/data
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/hostname
-          operator: In
-          values:
-          - intel-4cpu-ubuntu-16gb-nbg-base
-
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: filestash-config-pv
-  labels:
-    app: filestash
-    volume: config
-spec:
-  capacity:
-    storage: 512Mi
-  accessModes:
-  - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-storage
-  local:
-    path: /root/containers/filestash-k8s/config
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/hostname
-          operator: In
-          values:
-          - intel-4cpu-ubuntu-16gb-nbg-base
-
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
   name: uptime-kuma-pv
   labels:
     app: uptime-kuma
@@ -118,6 +66,32 @@ spec:
   storageClassName: local-storage
   local:
     path: /root/containers/uptime-kuma-k8s-data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - intel-4cpu-ubuntu-16gb-nbg-base
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: filebrowser-pv
+  labels:
+    app: filebrowser
+    volume: data
+spec:
+  capacity:
+    storage: 512Mi
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /root/containers/filebrowser-k8s-data
   nodeAffinity:
     required:
       nodeSelectorTerms:
