@@ -9,8 +9,9 @@ Self-hosted services infrastructure deployed on Kubernetes with persistent stora
 - **Gitea Actions Runner** - CI/CD runner for Docker builds and deployments
 - **Umami** - Analytics platform (analytics.arcbjorn.com)
 - **Memos** - Note-taking application (memos.arcbjorn.com)
-- **Filestash** - File management interface (server.arcbjorn.com)
+- **Filebrowser** - File management interface (server.arcbjorn.com)
 - **Uptime Kuma** - Uptime monitoring (uptime.arcbjorn.com)
+- **Prometheus Stack** - Infrastructure metrics and monitoring (internal cluster access)
 
 ## Architecture
 
@@ -70,10 +71,10 @@ Internet → Ingress → Services → Pods → Containers
 │ │   CI/CD automation              │     │   runner workspace          │ │
 │ │ • umami (Deployment)            │────►│ • memos-data (512Mi)        │ │
 │ │   web analytics                 │     │   notes & content           │ │
-│ │ • memos (Deployment)            │────►│ • filestash-data (512Mi)    │ │
+│ │ • memos (Deployment)            │────►│ • filebrowser-data (512Mi)  │ │
 │ │   note-taking                   │     │   file storage              │ │
-│ │ • filestash (Deployment)        │────►│ • filestash-config (512Mi)  │ │
-│ │   file management               │     │   app configuration         │ │
+│ │ • filebrowser (Deployment)      │────►│                             │ │
+│ │   file management               │     │                             │ │
 │ │ • uptime-kuma (Deployment)      │────►│ • uptime-kuma-data (512Mi)  │ │
 │ │   uptime monitoring             │     │   monitoring data           │ │
 │ │ • static-sites (Deployments)    │────►│ • hostPath volumes          │ │
@@ -193,7 +194,7 @@ kubectl apply -f k8s/postgresql/
 kubectl apply -f k8s/gitea/
 kubectl apply -f k8s/umami/
 kubectl apply -f k8s/memos/
-kubectl apply -f k8s/filestash/
+kubectl apply -f k8s/filebrowser/
 kubectl apply -f k8s/uptime-kuma/
 kubectl apply -f k8s/static-sites/
 kubectl apply -f k8s/ingress/
@@ -210,7 +211,7 @@ Start Kubernetes port forwards (avoid ports 3000/3001 if Docker is still running
 kubectl port-forward svc/gitea 4000:3000 -n base-infra &
 kubectl port-forward svc/umami 4001:3000 -n base-infra &
 kubectl port-forward svc/memos 5230:5230 -n base-infra &
-kubectl port-forward svc/filestash 8334:8334 -n base-infra &
+kubectl port-forward svc/filebrowser 8080:8080 -n base-infra &
 kubectl port-forward svc/uptime-kuma 4002:3001 -n base-infra &
 
 # Note: Gitea Actions Runner doesn't need port forwarding - it runs internally
@@ -229,7 +230,7 @@ ssh -L 4000:localhost:4000 -L 4001:localhost:4001 -L 5230:localhost:5230 -L 8334
 - **Gitea**: http://localhost:4000
 - **Umami**: http://localhost:4001  
 - **Memos**: http://localhost:5230
-- **Filestash**: http://localhost:8334
+- **Filebrowser**: http://localhost:8080
 - **Uptime Kuma**: http://localhost:4002
 
 #### Cleanup After Testing
@@ -311,7 +312,7 @@ chmod +x postgresql/create-multiple-postgresql-databases.sh
 │   ├── gitea/             # Git hosting service + Actions runner
 │   ├── umami/             # Analytics platform
 │   ├── memos/             # Note-taking app
-│   ├── filestash/         # File management
+│   ├── filebrowser/       # File management
 │   ├── uptime-kuma/       # Uptime monitoring
 │   ├── static-sites/      # Static website deployments
 │   ├── storage/           # PersistentVolumes
@@ -328,7 +329,7 @@ chmod +x postgresql/create-multiple-postgresql-databases.sh
 - Gitea: https://git.arcbjorn.com
 - Umami: https://analytics.arcbjorn.com  
 - Memos: https://memos.arcbjorn.com
-- Filestash: https://server.arcbjorn.com
+- Filebrowser: https://server.arcbjorn.com
 - Uptime Kuma: https://uptime.arcbjorn.com
 
 **Internal Communication:**
