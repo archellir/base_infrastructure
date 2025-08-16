@@ -128,7 +128,7 @@ if [[ "$REMOVE_DATA" == true ]]; then
     rm -rf /root/containers/gitea-k8s-data
     rm -rf /root/containers/gitea-runner-k8s-data
     rm -rf /root/containers/memos-k8s-data
-    rm -rf /root/containers/filestash-k8s
+    rm -rf /root/containers/filebrowser-k8s-data
     rm -rf /root/containers/uptime-kuma-k8s-data
     
     echo "📁 Creating fresh storage directories..."
@@ -136,8 +136,7 @@ if [[ "$REMOVE_DATA" == true ]]; then
     mkdir -p /root/containers/gitea-k8s-data
     mkdir -p /root/containers/gitea-runner-k8s-data
     mkdir -p /root/containers/memos-k8s-data
-    mkdir -p /root/containers/filestash-k8s/data
-    mkdir -p /root/containers/filestash-k8s/config
+    mkdir -p /root/containers/filebrowser-k8s-data
     mkdir -p /root/containers/uptime-kuma-k8s-data
     echo "  ⚠️  All services will reinitialize with fresh data"
     
@@ -146,7 +145,7 @@ if [[ "$REMOVE_DATA" == true ]]; then
     chown -R 1000:1000 /root/containers/gitea-k8s-data
     chown -R 1000:1000 /root/containers/gitea-runner-k8s-data
     chown -R 1000:1000 /root/containers/memos-k8s-data
-    chown -R 1000:1000 /root/containers/filestash-k8s
+    chown -R 1000:1000 /root/containers/filebrowser-k8s-data
     chown -R 1000:1000 /root/containers/uptime-kuma-k8s-data
 else
     echo "✅ Preserving application data in /root/containers/"
