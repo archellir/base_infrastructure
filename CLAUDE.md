@@ -21,6 +21,7 @@ Each service directory under `k8s/` contains:
 
 Active services:
 - **k8s/postgresql/**: Shared PostgreSQL StatefulSet
+- **k8s/monitoring/**: Prometheus monitoring stack for denshimon real-time metrics
 - **k8s/gitea/**: Git hosting service with container registry (git.arcbjorn.com)
 - **k8s/gitea/gitea-actions-runner**: Gitea Actions runner for CI/CD workflows
 - **k8s/umami/**: Analytics platform (analytics.arcbjorn.com)
@@ -70,6 +71,35 @@ kubectl scale deployment gitea --replicas=2 -n base-infra
 
 # Port forward for testing
 kubectl port-forward svc/gitea 4000:3000 -n base-infra
+```
+
+### Monitoring Stack Operations
+```bash
+# Deploy monitoring stack
+cd k8s/monitoring && ./deploy.sh
+
+# Check monitoring services status
+kubectl get pods -n monitoring
+kubectl get services -n monitoring
+
+# View monitoring logs
+kubectl logs -f deployment/prometheus -n monitoring
+kubectl logs -f deployment/kube-state-metrics -n monitoring
+kubectl logs -f daemonset/node-exporter -n monitoring
+kubectl logs -f daemonset/storage-exporter -n monitoring
+
+# Access Prometheus UI (for debugging)
+kubectl port-forward -n monitoring svc/prometheus-service 9090:9090
+
+# Check Prometheus targets and metrics
+curl http://localhost:9090/api/v1/targets
+curl http://localhost:9090/api/v1/query?query=up
+
+# Restart monitoring components
+kubectl rollout restart deployment/prometheus -n monitoring
+kubectl rollout restart deployment/kube-state-metrics -n monitoring
+kubectl rollout restart daemonset/node-exporter -n monitoring
+kubectl rollout restart daemonset/storage-exporter -n monitoring
 ```
 
 ### Gitea Actions and CI/CD
@@ -139,6 +169,7 @@ jobs:
 ## Development Notes
 
 - Database connections use Kubernetes service names: `postgresql://username:password@postgresql:5432/db_name`
+- **Monitoring backend connection**: `http://prometheus-service.monitoring.svc.cluster.local:9090`
 - PersistentVolumes require proper host directory permissions: `chown -R 1000:1000 /root/containers/`
 - Gitea Actions runner requires Docker socket access and privileged container mode
 - Services communicate via Kubernetes DNS: `service-name.namespace.svc.cluster.local`
@@ -146,6 +177,7 @@ jobs:
 - Storage is limited to 512Mi per service (expandable by updating PV specs)
 - External access uses nginx-ingress with hostNetwork: true (no NodePort/LoadBalancer needed)
 - iptables bypass rules inserted at position 1 in INPUT chain (before UFW/Calico rules)
+- **Monitoring stack provides real metrics for denshimon dashboards** (replaces frontend mock data)
 
 ## Network Security
 
@@ -174,6 +206,36 @@ jobs:
 - Ingress admission webhook conflicts are automatically handled in deploy script
 - #memoize principle: Always improve automation rather than doing manual work
 
+## Monitoring Stack Architecture
+
+### Components
+- **Prometheus Server**: Central metrics database with 15-day retention
+- **Node Exporter**: System-level metrics (CPU, memory, disk I/O, network)
+- **kube-state-metrics**: Kubernetes object state metrics (pods, deployments, nodes)
+- **Storage Exporter**: Custom per-volume IOPS, throughput, and latency metrics
+
+### Integration
+- **denshimon backend** connects to Prometheus API for real dashboard data
+- **Replaces frontend mock data** with actual infrastructure metrics
+- **Headless deployment**: No external UI, ClusterIP services only
+- **Automatic service discovery** and 15-second scrape intervals
+
+### Key Metrics Available
+```promql
+# CPU usage across cluster
+100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+
+# Memory utilization
+(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100
+
+# Network traffic by pod
+sum(rate(container_network_receive_bytes_total[5m])) by (pod)
+
+# Storage IOPS and throughput
+storage_volume_read_iops{volume="pvc-name"}
+storage_volume_write_throughput_bytes{volume="pvc-name"}
+```
+
 ## Testing and Verification Rules
 
 - **DO NOT SAY SOMETHING IS WORKING UNTIL YOU VERIFY IT**
@@ -181,3 +243,4 @@ jobs:
 - **Verify both HTTP and HTTPS from external perspective**
 - **Check all services, not just one**
 - **Test from user's perspective, not localhost**
+- **Verify monitoring stack**: Check all exporters are scraped and metrics available

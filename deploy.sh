@@ -22,7 +22,7 @@ cleanup() {
 trap cleanup EXIT
 
 # Progress tracking
-TOTAL_STEPS=8
+TOTAL_STEPS=9
 CURRENT_STEP=0
 
 progress() {
@@ -102,11 +102,17 @@ echo "ℹ️  Note: Runner requires registration token from Gitea admin panel"
 echo "    Get token from: https://git.arcbjorn.com/admin/actions/runners"
 echo "    Add token with: kubectl patch secret app-secrets -n base-infra --type='merge' -p='{\"data\":{\"GITEA_RUNNER_TOKEN\":\"'\$(echo -n 'YOUR_TOKEN' | base64)'\"}}'"
 
-# Step 6: Deploy static sites
+# Step 6: Deploy monitoring stack
+progress "📊 Deploying monitoring stack"
+echo "📊 Deploying Prometheus monitoring stack for denshimon..."
+cd k8s/monitoring && ./deploy.sh && cd ../..
+echo "✅ Monitoring stack deployed - backend available at prometheus-service.monitoring.svc.cluster.local:9090"
+
+# Step 7: Deploy static sites
 progress "📄 Deploying static sites"
 kubectl apply -f k8s/static-sites/
 
-# Step 7: Ask about ingress deployment or use argument
+# Step 8: Ask about ingress deployment or use argument
 progress "🔀 Configuring ingress routing"
 if [[ "$1" == "--ingress" || "$1" == "-i" ]]; then
     REPLY="y"
@@ -169,16 +175,22 @@ else
     echo "⏭️  Skipping ingress deployment"
 fi
 
-# Step 8: Show deployment status
+# Step 9: Show deployment status
 progress "✅ Deployment complete! Checking status"
 echo ""
 echo "✅ Deployment complete! Checking status..."
 echo ""
-echo "Pods:"
+echo "Base Infrastructure Pods:"
 kubectl get pods -n base-infra
+echo ""
+echo "Monitoring Stack Pods:"
+kubectl get pods -n monitoring
 echo ""
 echo "Services:"
 kubectl get services -n base-infra
+echo ""
+echo "Monitoring Services:"
+kubectl get services -n monitoring
 echo ""
 echo "PersistentVolumeClaims:"
 kubectl get pvc -n base-infra
@@ -186,7 +198,9 @@ kubectl get pvc -n base-infra
 echo ""
 echo "🎉 Infrastructure deployment finished!"
 echo "📊 Use 'kubectl get pods -n base-infra' to monitor pod status"
+echo "📊 Use 'kubectl get pods -n monitoring' to monitor monitoring stack"
 echo "🔍 Use 'kubectl logs -f deployment/<service-name> -n base-infra' to view logs"
+echo "📈 Prometheus API available at: prometheus-service.monitoring.svc.cluster.local:9090"
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo ""
     echo "To enable ingress routing later:"
