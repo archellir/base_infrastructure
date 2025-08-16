@@ -1,5 +1,6 @@
 # Secrets with actual credentials
 secrets-actual.yaml
+k8s/namespace/secrets.yaml
 
 # macOS
 .DS_Store
