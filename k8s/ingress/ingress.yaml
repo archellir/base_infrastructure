@@ -75,7 +75,7 @@ spec:
             port:
               number: 3001
   
-  # File Browser (Filestash)
+  # File Browser (Filebrowser)
   - host: server.arcbjorn.com
     http:
       paths:
@@ -83,9 +83,9 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: filestash
+            name: filebrowser
             port:
-              number: 8334
+              number: 8080
   
   
   # Notes and Memos
