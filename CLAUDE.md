@@ -28,6 +28,7 @@ Active services:
 - **k8s/memos/**: Note-taking application (memos.arcbjorn.com)
 - **k8s/filebrowser/**: File management interface (server.arcbjorn.com)
 - **k8s/uptime-kuma/**: Uptime monitoring (uptime.arcbjorn.com)
+- **k8s/dokploy/**: Deployment platform for managing remote production servers (products.arcbjorn.com)
 - **k8s/static-sites/**: Static website deployments
 
 ## Common Commands
@@ -46,6 +47,7 @@ kubectl apply -f k8s/
 kubectl logs -f deployment/gitea -n base-infra
 kubectl logs -f deployment/gitea-actions-runner -n base-infra
 kubectl logs -f deployment/umami -n base-infra
+kubectl logs -f deployment/dokploy -n base-infra
 ```
 
 ### Database Operations
@@ -100,6 +102,27 @@ kubectl rollout restart deployment/prometheus -n monitoring
 kubectl rollout restart deployment/kube-state-metrics -n monitoring
 kubectl rollout restart daemonset/node-exporter -n monitoring
 kubectl rollout restart daemonset/storage-exporter -n monitoring
+```
+
+### Dokploy Operations
+```bash
+# Check Dokploy status
+kubectl get pods -n base-infra -l app=dokploy
+kubectl get pods -n base-infra -l app=redis-dokploy
+
+# View Dokploy logs
+kubectl logs -f deployment/dokploy -n base-infra
+kubectl logs -f deployment/redis-dokploy -n base-infra
+
+# Restart Dokploy services
+kubectl rollout restart deployment/dokploy -n base-infra
+kubectl rollout restart deployment/redis-dokploy -n base-infra
+
+# Port forward for testing
+kubectl port-forward svc/dokploy 4000:3000 -n base-infra
+
+# Access Dokploy UI
+# https://products.arcbjorn.com
 ```
 
 ### Gitea Actions and CI/CD
@@ -164,6 +187,7 @@ jobs:
 - `memos.arcbjorn.com` → Memos service (memos:5230)
 - `server.arcbjorn.com` → Filebrowser service (filebrowser:8080)
 - `uptime.arcbjorn.com` → Uptime Kuma service (uptime-kuma:3001)
+- `products.arcbjorn.com` → Dokploy service (dokploy:3000)
 - Static sites: `dashboard.arcbjorn.com`, `homepage.arcbjorn.com`, `argentinamusic.space`, `humansconnect.ai`
 
 ## Development Notes

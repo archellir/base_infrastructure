@@ -1,0 +1,208 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: dokploy-pv
+  namespace: base-infra
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: /root/containers/dokploy
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dokploy-pvc
+  namespace: base-infra
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: manual
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: redis-dokploy-pv
+  namespace: base-infra
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: /root/containers/redis-dokploy
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-dokploy-pvc
+  namespace: base-infra
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: manual
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-dokploy
+  namespace: base-infra
+  labels:
+    app: redis-dokploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-dokploy
+  template:
+    metadata:
+      labels:
+        app: redis-dokploy
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        - name: redis-storage
+          mountPath: /data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: redis-storage
+        persistentVolumeClaim:
+          claimName: redis-dokploy-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-dokploy
+  namespace: base-infra
+spec:
+  selector:
+    app: redis-dokploy
+  ports:
+  - port: 6379
+    targetPort: 6379
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dokploy
+  namespace: base-infra
+  labels:
+    app: dokploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dokploy
+  template:
+    metadata:
+      labels:
+        app: dokploy
+    spec:
+      containers:
+      - name: dokploy
+        image: dokploy/dokploy:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: DOKPLOY_DATABASE_URL
+        - name: REDIS_HOST
+          value: "redis-dokploy"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: PORT
+          value: "3000"
+        - name: NODE_ENV
+          value: "production"
+        volumeMounts:
+        - name: dokploy-storage
+          mountPath: /app/data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: dokploy-storage
+        persistentVolumeClaim:
+          claimName: dokploy-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dokploy
+  namespace: base-infra
+spec:
+  selector:
+    app: dokploy
+  ports:
+  - port: 3000
+    targetPort: 3000
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dokploy-ingress
+  namespace: base-infra
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - products.arcbjorn.com
+    secretName: dokploy-tls
+  rules:
+  - host: products.arcbjorn.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: dokploy
+            port:
+              number: 3000
