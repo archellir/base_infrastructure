@@ -28,7 +28,7 @@ Active services:
 - **k8s/memos/**: Note-taking application (memos.arcbjorn.com)
 - **k8s/filebrowser/**: File management interface (server.arcbjorn.com)
 - **k8s/uptime-kuma/**: Uptime monitoring (uptime.arcbjorn.com)
-- **k8s/dokploy/**: Deployment platform for managing remote production servers (products.arcbjorn.com)
+- **k8s/dokploy/**: Deployment platform for managing remote production servers with Tailscale connectivity (products.arcbjorn.com)
 - **k8s/static-sites/**: Static website deployments
 
 ## Common Commands
@@ -106,13 +106,20 @@ kubectl rollout restart daemonset/storage-exporter -n monitoring
 
 ### Dokploy Operations
 ```bash
-# Check Dokploy status
+# Check Dokploy status (includes Tailscale sidecar)
 kubectl get pods -n base-infra -l app=dokploy
 kubectl get pods -n base-infra -l app=redis-dokploy
 
-# View Dokploy logs
-kubectl logs -f deployment/dokploy -n base-infra
+# View Dokploy logs (2/2 containers: dokploy + tailscale)
+kubectl logs -f deployment/dokploy -n base-infra -c dokploy
+kubectl logs -f deployment/dokploy -n base-infra -c tailscale
 kubectl logs -f deployment/redis-dokploy -n base-infra
+
+# Check Tailscale connectivity status
+kubectl exec deployment/dokploy -n base-infra -c tailscale -- tailscale status
+
+# Test connectivity to Tailscale nodes (e.g., nova server)
+kubectl exec deployment/dokploy -n base-infra -c dokploy -- curl -v telnet://nova:2222 --connect-timeout 3
 
 # Restart Dokploy services
 kubectl rollout restart deployment/dokploy -n base-infra
@@ -123,6 +130,12 @@ kubectl port-forward svc/dokploy 4000:3000 -n base-infra
 
 # Access Dokploy UI
 # https://products.arcbjorn.com
+
+# Tailscale sidecar configuration
+# - Enables SSH access to Tailscale-only servers
+# - Uses shared pod network namespace for transparent VPN access
+# - State managed via Kubernetes secrets (dokploy-tailscale-state)
+# - RBAC: tailscale service account with secret management permissions
 ```
 
 ### Gitea Actions and CI/CD
@@ -174,6 +187,7 @@ jobs:
 ## Configuration Dependencies
 
 - Kubernetes secrets stored in `k8s/namespace/secrets.yaml` (not tracked in repo)
+- Tailscale auth key configured in secrets for Dokploy VPN connectivity
 - PostgreSQL uses ConfigMap for database initialization
 - Ingress controller uses hostNetwork: true for direct port 80/443 access
 - Docker-style iptables bypass rules: `DOCKER-STYLE-HTTP-BYPASS` (port 80), `DOCKER-STYLE-HTTPS-BYPASS` (port 443)
