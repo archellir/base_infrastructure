@@ -296,6 +296,41 @@ docker exec -t <postgres-container> pg_dumpall -c -U <user> > backup_$(date +%Y%
 cat backup.sql | docker exec -i <postgres-container> psql -U <user>
 ```
 
+### System Maintenance
+
+#### Memory Management - Fixing systemd/journald Memory Leak
+If the system shows high memory usage by `/sbin/init` (PID 1) after extended uptime:
+
+```bash
+# Check memory usage
+ps aux --sort=-%mem | head -5
+
+# Clean journal logs (keeps only last 100MB)
+journalctl --vacuum-size=100M
+
+# Restart systemd without rebooting (releases leaked memory)
+systemctl daemon-reexec
+
+# Drop caches to free additional memory
+echo 3 > /proc/sys/vm/drop_caches && sync
+
+# Verify memory is freed
+free -h
+```
+
+**Prevent journal memory leaks permanently:**
+```bash
+# Edit /etc/systemd/journald.conf and set:
+SystemMaxUse=100M        # Total journal size limit
+SystemMaxFileSize=25M    # Individual file limit
+MaxRetentionSec=7d       # Auto-delete logs older than 7 days
+
+# Apply configuration
+systemctl restart systemd-journald
+```
+
+This prevents the memory leak that occurs when systemd accumulates logs over weeks/months of uptime.
+
 ### Required Permissions
 ```bash
 # pgAdmin directory permissions (Docker Compose only)
