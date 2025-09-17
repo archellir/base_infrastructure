@@ -54,6 +54,34 @@ spec:
       storage: 1Gi
   storageClassName: manual
 ---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: tailscale-dokploy-pv
+  namespace: base-infra
+spec:
+  capacity:
+    storage: 100Mi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: /root/containers/tailscale-dokploy
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tailscale-dokploy-pvc
+  namespace: base-infra
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  storageClassName: manual
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -121,6 +149,18 @@ spec:
       labels:
         app: dokploy
     spec:
+      serviceAccountName: tailscale
+      volumes:
+      - name: dokploy-storage
+        persistentVolumeClaim:
+          claimName: dokploy-pvc
+      - name: tailscale-state
+        persistentVolumeClaim:
+          claimName: tailscale-dokploy-pvc
+      - name: dev-net-tun
+        hostPath:
+          path: /dev/net/tun
+          type: CharDevice
       containers:
       - name: dokploy
         image: dokploy/dokploy:latest
@@ -162,10 +202,44 @@ spec:
             port: 3000
           initialDelaySeconds: 5
           periodSeconds: 5
-      volumes:
-      - name: dokploy-storage
-        persistentVolumeClaim:
-          claimName: dokploy-pvc
+      - name: tailscale
+        image: tailscale/tailscale:stable
+        securityContext:
+          runAsUser: 0
+          capabilities:
+            add:
+            - NET_ADMIN
+            - NET_RAW
+        env:
+        - name: TS_AUTHKEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: TAILSCALE_AUTHKEY
+        - name: TS_HOSTNAME
+          value: dokploy-pod
+        - name: TS_EXTRA_ARGS
+          value: --ssh
+        - name: TS_USERSPACE
+          value: "false"
+        - name: TS_STATE_DIR
+          value: /var/lib/tailscale
+        - name: TS_ACCEPT_DNS
+          value: "true"
+        - name: TS_KUBE_SECRET
+          value: dokploy-tailscale-state
+        volumeMounts:
+        - name: dev-net-tun
+          mountPath: /dev/net/tun
+        - name: tailscale-state
+          mountPath: /var/lib/tailscale
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
 ---
 apiVersion: v1
 kind: Service
