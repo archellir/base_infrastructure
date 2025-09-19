@@ -1,0 +1,9 @@
+# Tailscale Commands Executed
+# These commands were run to disable Tailscale DNS management
+
+# Disable Tailscale DNS management (eliminates 32 reverse DNS zones)
+tailscale set --accept-dns=false
+
+# Result: Tailscale DNS scopes changed from "DNS" to "none"
+# Before: 32+ reverse DNS zones (100.100.in-addr.arpa, etc.)
+# After: No DNS zones managed by Tailscale
